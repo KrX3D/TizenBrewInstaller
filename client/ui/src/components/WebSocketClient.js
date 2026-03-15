@@ -6,7 +6,9 @@ const Events = {
     Error: 3,
     InstallationStatus: 4,
     DeleteConfiguration: 5,
-    ConnectToTV: 6
+    ConnectToTV: 6,
+    CheckTizenBrewConfig: 7,
+    ResetTizenBrewConfig: 8,
 };
 
 class Client {
@@ -24,6 +26,7 @@ class Client {
     onMessage(event) {
         const data = JSON.parse(event.data);
         const { type, payload } = data;
+        const toast = window.__globalToast;
 
         switch (type) {
             case Events.InstallPackage: {
@@ -105,6 +108,50 @@ class Client {
                             disappear: false
                         }
                     });
+                }
+                break;
+            }
+
+            case Events.CheckTizenBrewConfig: {
+                if (!toast) break;
+                if (!payload.exists) {
+                    toast.info(i18next.t('tizenBrewConfig.notFound'));
+                    break;
+                }
+                if (payload.error) {
+                    toast.error(i18next.t('tizenBrewConfig.statError', { error: payload.error }));
+                    break;
+                }
+                const sizeKb = (payload.size / 1024).toFixed(1);
+                const mtime = new Date(payload.mtime).toLocaleString();
+                const permStr = [
+                    payload.readable ? i18next.t('tizenBrewConfig.readable') : null,
+                    payload.writable ? i18next.t('tizenBrewConfig.writable') : null,
+                ].filter(Boolean).join(', ') || i18next.t('tizenBrewConfig.noPermissions');
+                toast.info(
+                    i18next.t('tizenBrewConfig.fileInfo', { sizeKb, mtime, permStr }),
+                    6000
+                );
+                break;
+            }
+
+            case Events.ResetTizenBrewConfig: {
+                if (!toast) break;
+                switch (payload.status) {
+                    case 'success':
+                        toast.success(i18next.t('tizenBrewConfig.resetSuccess'));
+                        break;
+                    case 'notFound':
+                        toast.info(i18next.t('tizenBrewConfig.notFound'));
+                        break;
+                    case 'permissionDenied':
+                        toast.error(i18next.t('tizenBrewConfig.permissionDenied'));
+                        break;
+                    case 'error':
+                        toast.error(i18next.t('tizenBrewConfig.resetError', { error: payload.message }));
+                        break;
+                    default:
+                        break;
                 }
                 break;
             }

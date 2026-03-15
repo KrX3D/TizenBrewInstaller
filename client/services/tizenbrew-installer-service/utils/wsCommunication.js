@@ -22,7 +22,9 @@ const Events = {
     Error: 3,
     InstallationStatus: 4,
     DeleteConfiguration: 5,
-    ConnectToTV: 6
+    ConnectToTV: 6,
+    CheckTizenBrewConfig: 7,
+    ResetTizenBrewConfig: 8,
 };
 
 module.exports = {

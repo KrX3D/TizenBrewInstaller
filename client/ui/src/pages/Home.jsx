@@ -1,4 +1,4 @@
-import { ArrowDownIcon, ArrowPathIcon } from '@heroicons/react/16/solid';
+import { ArrowDownIcon, ArrowPathIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/16/solid';
 import { useContext } from 'react';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import Item from '../components/Item.jsx';
@@ -50,6 +50,11 @@ export default function Home() {
                     alert(t('installer.alreadyInstalled'));
                 }
             } catch (e) { }
+
+            // Auto-check the TizenBrew config on load so the user sees its status
+            context.state.client.send({
+                type: Events.CheckTizenBrewConfig
+            });
         }
     }, [context.state.client, context.state.client?.socket?.readyState]);
 
@@ -115,6 +120,38 @@ export default function Home() {
                         </span>
                     </h3>
                 </Item>
+
+                {/* TizenBrew Config management — only available on TV */}
+                {isTizenApiAvailable && (
+                    <Item onClick={() => {
+                        context.state.client.send({
+                            type: Events.CheckTizenBrewConfig
+                        });
+                    }}>
+                        <h3 className='text-sky-400 text-base/7 font-semibold'>
+                            <span className='flex items-center gap-2'>
+                                <MagnifyingGlassIcon className='h-8 w-8 text-sky-400' />
+                                {t('tizenBrewConfig.checkButton')}
+                            </span>
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-400">{t('tizenBrewConfig.checkDesc')}</p>
+                    </Item>
+                )}
+                {isTizenApiAvailable && (
+                    <Item onClick={() => {
+                        context.state.client.send({
+                            type: Events.ResetTizenBrewConfig
+                        });
+                    }}>
+                        <h3 className='text-red-400 text-base/7 font-semibold'>
+                            <span className='flex items-center gap-2'>
+                                <TrashIcon className='h-8 w-8 text-red-400' />
+                                {t('tizenBrewConfig.resetButton')}
+                            </span>
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-400">{t('tizenBrewConfig.resetDesc')}</p>
+                    </Item>
+                )}
             </div>
         </div>
     );

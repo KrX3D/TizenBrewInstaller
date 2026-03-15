@@ -12,14 +12,21 @@ import './components/i18n.js';
 import { ExclamationCircleIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
 import Desktop from './pages/Desktop.jsx';
+import { ToastContainer, useToast, setGlobalToast } from './components/Toast.jsx';
 
 export default function App() {
   const headerRef = useRef(null);
   const [headerHeight, setHeaderHeight] = useState(0);
   const context = useContext(GlobalStateContext);
   const { t } = useTranslation();
+  const { toasts, toast } = useToast();
   window.dispatch = context.dispatch;
   window.state = context.state;
+
+  // Register toast globally so WebSocketClient (non-React) can reach it
+  useEffect(() => {
+    setGlobalToast(toast);
+  }, [toast]);
 
   useEffect(() => {
     if (context.state.sharedData.error.disappear) {
@@ -34,6 +41,7 @@ export default function App() {
       }, 5000);
     }
   }, [context.state.sharedData.error.disappear]);
+
   useEffect(() => {
     setHeaderHeight(headerRef.current.base.clientHeight);
   }, [headerRef]);
@@ -67,6 +75,7 @@ export default function App() {
             <Route component={About} path="/ui/dist/index.html/about" />
           </Router>
         </div>
+        <ToastContainer toasts={toasts} onDismiss={toast.dismiss} />
       </LocationProvider>
     </ErrorBoundary>
   );

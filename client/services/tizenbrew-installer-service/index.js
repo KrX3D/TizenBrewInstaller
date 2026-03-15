@@ -10,7 +10,7 @@ module.exports.onStart = function () {
     const { readConfig, writeConfig } = require('./utils/configuration.js');
     const { fetchLatestRelease } = require('./utils/GitHubAPI.js')
     const { createSamsungCertificate, resignPackage } = require('./utils/SamsungCertificateCreation.js');
-    const { writeFileSync, readFileSync, readdirSync, statSync, mkdirSync, existsSync } = require('fs');
+    const { writeFileSync, readFileSync, readdirSync, statSync, mkdirSync, existsSync, accessSync, constants, unlinkSync } = require('fs');
     const { setValue } = require('./utils/Buxton2.js');
     const { join, dirname } = require('path');
     const { parsePackage, installPackage } = require('./utils/PackageInstallation.js');
@@ -309,6 +309,60 @@ module.exports.onStart = function () {
                             });
                     } catch (e) {
                         wsConn.send(wsConn.Event(Events.ConnectToTV, { success: false, error: e.message }));
+                    }
+                    break;
+                }
+                case Events.CheckTizenBrewConfig: {
+                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
+                    if (!existsSync(TB_CONFIG)) {
+                        return wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, {
+                            exists: false
+                        }));
+                    }
+                    try {
+                        const stats = statSync(TB_CONFIG);
+                        let readable = false;
+                        let writable = false;
+                        try { accessSync(TB_CONFIG, constants.R_OK); readable = true; } catch (_) {}
+                        try { accessSync(TB_CONFIG, constants.W_OK); writable = true; } catch (_) {}
+                        wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, {
+                            exists: true,
+                            readable,
+                            writable,
+                            size: stats.size,
+                            mtime: stats.mtime.toISOString()
+                        }));
+                    } catch (e) {
+                        wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, {
+                            exists: true,
+                            error: e.message
+                        }));
+                    }
+                    break;
+                }
+                
+                case Events.ResetTizenBrewConfig: {
+                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
+                    if (!existsSync(TB_CONFIG)) {
+                        return wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, {
+                            status: 'notFound'
+                        }));
+                    }
+                    try {
+                        accessSync(TB_CONFIG, constants.W_OK);
+                    } catch (_) {
+                        return wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, {
+                            status: 'permissionDenied'
+                        }));
+                    }
+                    try {
+                        unlinkSync(TB_CONFIG);
+                        wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, { status: 'success' }));
+                    } catch (e) {
+                        wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, {
+                            status: 'error',
+                            message: e.message
+                        }));
                     }
                     break;
                 }
