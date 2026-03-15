@@ -7,6 +7,7 @@ import { useEffect, useState, useContext } from 'react';
 import Client from './components/WebSocketClient.js';
 import InstallFromGitHub from './pages/InstallFromGitHub.jsx';
 import InstallFromUSB from './pages/InstallFromUSB.jsx';
+import SavedRepos from './pages/SavedRepos.jsx';
 import About from './pages/About.jsx';
 import './components/i18n.js';
 import { ExclamationCircleIcon } from '@heroicons/react/16/solid';
@@ -23,36 +24,21 @@ export default function App() {
   window.dispatch = context.dispatch;
   window.state = context.state;
 
-  // Register toast globally so WebSocketClient (non-React) can reach it
-  useEffect(() => {
-    setGlobalToast(toast);
-  }, [toast]);
+  useEffect(() => { setGlobalToast(toast); }, [toast]);
 
   useEffect(() => {
     if (context.state.sharedData.error.disappear) {
       setTimeout(() => {
-        context.dispatch({
-          type: 'SET_ERROR',
-          payload: {
-            message: null,
-            disappear: false
-          }
-        });
+        context.dispatch({ type: 'SET_ERROR', payload: { message: null, disappear: false } });
       }, 5000);
     }
   }, [context.state.sharedData.error.disappear]);
 
-  useEffect(() => {
-    setHeaderHeight(headerRef.current.base.clientHeight);
-  }, [headerRef]);
+  useEffect(() => { setHeaderHeight(headerRef.current.base.clientHeight); }, [headerRef]);
 
   useEffect(() => {
-    if (!window.setClient) {
-      startService(context);
-      window.setClient = true;
-    }
+    if (!window.setClient) { startService(context); window.setClient = true; }
   }, []);
-
 
   return (
     <ErrorBoundary>
@@ -72,6 +58,7 @@ export default function App() {
             <Route component={Desktop} path="/ui/dist/index.html/desktop" />
             <Route component={InstallFromGitHub} path="/ui/dist/index.html/install-from-gh" />
             <Route component={InstallFromUSB} path="/ui/dist/index.html/install-from-usb" />
+            <Route component={SavedRepos} path="/ui/dist/index.html/saved-repos" />
             <Route component={About} path="/ui/dist/index.html/about" />
           </Router>
         </div>
@@ -81,42 +68,20 @@ export default function App() {
   );
 }
 
-
 function startService(context) {
   const testWS = new WebSocket('ws://localhost:8091');
-
   testWS.onerror = () => {
     const pkgId = tizen.application.getCurrentApplication().appInfo.packageId;
-
     const serviceId = pkgId + ".InstallerService";
-
     tizen.application.launchAppControl(
       new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/service"),
       serviceId,
-      function () {
-        context.dispatch({
-          type: 'SET_STATE',
-          payload: 'service.started'
-        });
-
-        window.location.reload();
-      },
-      function (e) {
-        alert("Launch Service failed: " + e.message);
-      }
+      function () { context.dispatch({ type: 'SET_STATE', payload: 'service.started' }); window.location.reload(); },
+      function (e) { alert("Launch Service failed: " + e.message); }
     );
   }
-
   testWS.onopen = () => {
-    context.dispatch({
-      type: 'SET_STATE',
-      payload: 'service.alreadyRunning'
-    });
-
-    context.dispatch({
-      type: 'SET_CLIENT',
-      payload: new Client(context)
-    });
-
+    context.dispatch({ type: 'SET_STATE', payload: 'service.alreadyRunning' });
+    context.dispatch({ type: 'SET_CLIENT', payload: new Client(context) });
   }
 }

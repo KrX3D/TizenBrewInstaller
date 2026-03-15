@@ -3,7 +3,6 @@ import { GlobalStateContext } from '../components/ClientContext.jsx';
 import { useLocation } from 'preact-iso';
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation';
 import { Events } from '../components/WebSocketClient.js';
-
 import Item from "../components/Item.jsx";
 
 export default function InstallFromGitHub() {
@@ -15,6 +14,7 @@ export default function InstallFromGitHub() {
     useEffect(() => {
         ref.current.focus();
     }, [ref]);
+
     return (
         <div className="relative isolate lg:px-8">
             <div className="mx-auto flex flex-wrap justify-center gap-4 top-4 relative">
@@ -33,18 +33,14 @@ export default function InstallFromGitHub() {
                         onBlur={() => {
                             const repo = name.trim();
                             if (repo) {
-                                dispatch({
-                                    type: 'SET_TIZENBREW_REPO',
-                                    payload: repo
-                                });
+                                // Save to persistent list and set as active
+                                dispatch({ type: 'ADD_REPO', payload: repo });
+                                dispatch({ type: 'SET_TIZENBREW_REPO', payload: repo });
                                 state.client.send({
                                     type: Events.InstallPackage,
-                                    payload: {
-                                        url: repo
-                                    }
+                                    payload: { url: repo }
                                 });
                             }
-
                             loc.route('/ui/dist/index.html');
                             setFocus('sn:focusable-item-1');
                         }}
@@ -53,5 +49,5 @@ export default function InstallFromGitHub() {
                 </Item>
             </div>
         </div>
-    )
+    );
 }

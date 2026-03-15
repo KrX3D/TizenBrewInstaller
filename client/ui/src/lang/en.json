@@ -51,6 +51,15 @@
         "permissionDenied": "Cannot delete tizenbrewConfig.json — permission denied.",
         "resetError": "Failed to delete tizenbrewConfig.json: {{error}}"
     },
+    "savedRepos": {
+        "button": "Saved Repos",
+        "desc": "{{count}} saved repo(s)",
+        "active": "Active",
+        "pageTitle": "Saved Repos",
+        "pageDesc": "Select a repo to make it active for install/update. Active repo is highlighted in purple.",
+        "empty": "No saved repos yet. Install from GitHub to add one.",
+        "hint": "Tap row to set active  •  arrow button to install now  •  trash to remove"
+    },
     "__contributors": [
         "reisxd"
     ]

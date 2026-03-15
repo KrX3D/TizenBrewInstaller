@@ -1,5 +1,5 @@
-import { ArrowDownIcon, ArrowPathIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/16/solid';
-import { useContext } from 'react';
+import { ArrowDownIcon, ArrowPathIcon, TrashIcon, MagnifyingGlassIcon, BookmarkIcon } from '@heroicons/react/16/solid';
+import { useContext, useRef } from 'react';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import Item from '../components/Item.jsx';
 import SignInQrCode from '../assets/signInQrCode.png';
@@ -9,15 +9,15 @@ import { Events } from '../components/WebSocketClient.js';
 import { useEffect } from 'preact/hooks';
 
 export default function Home() {
-    // Check if Tizen API is available
     const isTizenApiAvailable = typeof tizen !== 'undefined' && tizen.application && tizen.application.getAppInfo;
     const context = useContext(GlobalStateContext);
     const { t } = useTranslation();
     const loc = useLocation();
+    // Prevent the auto-check from firing more than once even if deps re-evaluate
+    const didAutoCheck = useRef(false);
 
     if (!isTizenApiAvailable) loc.route('/ui/dist/index.html/desktop');
 
-    // Check if TizenBrew is already installed.
     let isTizenBrewInstalled = false;
     let installedVersion = null;
     try {
@@ -25,22 +25,22 @@ export default function Home() {
         isTizenBrewInstalled = true;
         installedVersion = appInfo.version;
     } catch (e) { }
-    
 
     useEffect(() => {
         if (
             context.state.client !== null &&
             context.state.client.socket &&
-            context.state.client.socket.readyState === WebSocket.OPEN
+            context.state.client.socket.readyState === WebSocket.OPEN &&
+            !didAutoCheck.current
         ) {
+            didAutoCheck.current = true;
+
             const appInfo = tizen.application.getAppInfo();
             if (appInfo.packageId === 'xvvl3S1bTU') {
                 alert(t('installer.installingAgain'));
                 context.state.client.send({
                     type: Events.InstallPackage,
-                    payload: {
-                        url: 'reisxd/TizenBrewInstaller'
-                    }
+                    payload: { url: 'reisxd/TizenBrewInstaller' }
                 });
             }
 
@@ -51,10 +51,7 @@ export default function Home() {
                 }
             } catch (e) { }
 
-            // Auto-check the TizenBrew config on load so the user sees its status
-            context.state.client.send({
-                type: Events.CheckTizenBrewConfig
-            });
+            context.state.client.send({ type: Events.CheckTizenBrewConfig });
         }
     }, [context.state.client, context.state.client?.socket?.readyState]);
 
@@ -65,9 +62,9 @@ export default function Home() {
                     <div className="p-8 rounded-2xl shadow-2xl max-w-full">
                         <h3 className="text-3xl font-bold mb-4">{t('resigning.resigningRequired')}</h3>
                         <p className="text-xl mb-4 whitespace-pre">{t('resigning.resigningRequiredDesc')}</p>
-                        <img 
-                            src={SignInQrCode} 
-                            alt="Sign In QR Code" 
+                        <img
+                            src={SignInQrCode}
+                            alt="Sign In QR Code"
                             className="mt-2 w-80 h-80 max-w-full max-h-[60vw] object-contain mx-auto border-8 rounded-lg"
                         />
                         <p className="mt-4 text-lg">{t('resigning.resigningRequiredAccessInfo', { ip: webapis.network.getIp() })}</p>
@@ -79,10 +76,8 @@ export default function Home() {
                 <Item onClick={() => {
                     context.state.client.send({
                         type: Events.InstallPackage,
-                        payload: {
-                            url: context.state.sharedData.tizenBrewRepo
-                        }
-                    })
+                        payload: { url: context.state.sharedData.tizenBrewRepo }
+                    });
                 }}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
                         {isTizenBrewInstalled ? (
@@ -100,9 +95,8 @@ export default function Home() {
                     <p className="mt-2 text-sm text-slate-300 break-all">Repo: {context.state.sharedData.tizenBrewRepo}</p>
                     {installedVersion && <p className="text-sm text-slate-300">Installed: {installedVersion}</p>}
                 </Item>
-                <Item onClick={() => {
-                    loc.route('/ui/dist/index.html/install-from-usb');
-                }}>
+
+                <Item onClick={() => loc.route('/ui/dist/index.html/install-from-usb')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
                         <span className='flex items-center gap-2'>
                             <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
@@ -110,9 +104,8 @@ export default function Home() {
                         </span>
                     </h3>
                 </Item>
-                <Item onClick={() => {
-                    loc.route('/ui/dist/index.html/install-from-gh');
-                }}>
+
+                <Item onClick={() => loc.route('/ui/dist/index.html/install-from-gh')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
                         <span className='flex items-center gap-2'>
                             <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
@@ -121,12 +114,24 @@ export default function Home() {
                     </h3>
                 </Item>
 
-                {/* TizenBrew Config management — only available on TV */}
+                <Item onClick={() => loc.route('/ui/dist/index.html/saved-repos')}>
+                    <h3 className='text-violet-400 text-base/7 font-semibold'>
+                        <span className='flex items-center gap-2'>
+                            <BookmarkIcon className='h-8 w-8 text-violet-400' />
+                            {t('savedRepos.button')}
+                        </span>
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-400">
+                        {t('savedRepos.desc', { count: context.state.sharedData.repoList.length })}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 break-all">
+                        {t('savedRepos.active')}: {context.state.sharedData.tizenBrewRepo}
+                    </p>
+                </Item>
+
                 {isTizenApiAvailable && (
                     <Item onClick={() => {
-                        context.state.client.send({
-                            type: Events.CheckTizenBrewConfig
-                        });
+                        context.state.client.send({ type: Events.CheckTizenBrewConfig });
                     }}>
                         <h3 className='text-sky-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
@@ -139,9 +144,7 @@ export default function Home() {
                 )}
                 {isTizenApiAvailable && (
                     <Item onClick={() => {
-                        context.state.client.send({
-                            type: Events.ResetTizenBrewConfig
-                        });
+                        context.state.client.send({ type: Events.ResetTizenBrewConfig });
                     }}>
                         <h3 className='text-red-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
