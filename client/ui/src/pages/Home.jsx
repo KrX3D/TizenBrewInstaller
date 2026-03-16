@@ -8,16 +8,12 @@ import { useLocation } from 'preact-iso';
 import { Events } from '../components/WebSocketClient.js';
 import { useEffect } from 'preact/hooks';
 
-// ── Known repo → Tizen package-ID mapping ────────────────────────────────────
+// ── Known repo → Tizen app-ID mapping (case-insensitive lookup below) ─────────
 const REPO_TO_PACKAGE_ID = {
-    'reisxd/TizenBrew':          'xvvl3S1bvH.TizenBrewStandalone',
-    'reisxd/TizenBrewInstaller': 'xvvl3S1bTI.TizenBrewStandalone',
+    'reisxd/tizenbrew':          'xvvl3S1bvH.TizenBrewStandalone',
+    'reisxd/tizenbrewinstaller': 'xvvl3S1bTI.TizenBrewStandalone',
 };
 
-// Extract last path segment and capitalise first character.
-// "reisxd/TizenBrew"          → "TizenBrew"
-// "reisxd/TizenBrewInstaller" → "TizenBrewInstaller"
-// "owner/my-app"              → "My-app"
 function repoLabel(repo) {
     if (!repo) return 'TizenBrew';
     const parts = repo.split('/');
@@ -25,10 +21,10 @@ function repoLabel(repo) {
     return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
-// Return { installed: bool, version: string|null } for the active repo.
 function getInstalledInfo(repo) {
     if (typeof tizen === 'undefined') return { installed: false, version: null };
-    const pkgId = REPO_TO_PACKAGE_ID[repo];
+    // Case-insensitive lookup so "reisxd/TizenBrew" and "reisxd/tizenbrew" both match
+    const pkgId = REPO_TO_PACKAGE_ID[repo.toLowerCase()];
     if (!pkgId) return { installed: false, version: null };
     try {
         const appInfo = tizen.application.getAppInfo(pkgId);
@@ -38,12 +34,21 @@ function getInstalledInfo(repo) {
     }
 }
 
+// Returns true if the repo is a "known" one we have a package ID for
+function isKnownRepo(repo) {
+    return !!REPO_TO_PACKAGE_ID[repo.toLowerCase()];
+}
+
 export default function Home() {
     const isTizenApiAvailable = typeof tizen !== 'undefined' && tizen.application && tizen.application.getAppInfo;
     const context = useContext(GlobalStateContext);
     const { t } = useTranslation();
     const loc = useLocation();
     const didRunRef = useRef(false);
+
+    // ── Debounce refs for check / reset config buttons (1 s cooldown) ──────────
+    const lastCheckTs  = useRef(0);
+    const lastResetTs  = useRef(0);
 
     if (!isTizenApiAvailable) loc.route('/ui/dist/index.html/desktop');
 
@@ -72,6 +77,20 @@ export default function Home() {
             } catch (_) { }
         }
     }, [context.state.client]);
+
+    function handleCheck() {
+        const now = Date.now();
+        if (now - lastCheckTs.current < 1000) return;
+        lastCheckTs.current = now;
+        context.state.client.send({ type: Events.CheckTizenBrewConfig });
+    }
+
+    function handleReset() {
+        const now = Date.now();
+        if (now - lastResetTs.current < 1000) return;
+        lastResetTs.current = now;
+        context.state.client.send({ type: Events.ResetTizenBrewConfig });
+    }
 
     return (
         <div className="relative isolate lg:px-8">
@@ -116,7 +135,7 @@ export default function Home() {
                     {installed && version && (
                         <p className="text-sm text-slate-300">{t('installer.installedVersion', { version })}</p>
                     )}
-                    {!installed && REPO_TO_PACKAGE_ID[activeRepo] === undefined && (
+                    {!isKnownRepo(activeRepo) && (
                         <p className="text-xs text-slate-500 mt-1">{t('installer.versionUnknown')}</p>
                     )}
                 </Item>
@@ -172,9 +191,7 @@ export default function Home() {
 
                 {/* ── Check TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item onClick={() => {
-                        context.state.client.send({ type: Events.CheckTizenBrewConfig });
-                    }}>
+                    <Item onClick={handleCheck}>
                         <h3 className='text-sky-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <MagnifyingGlassIcon className='h-8 w-8 text-sky-400' />
@@ -187,9 +204,7 @@ export default function Home() {
 
                 {/* ── Reset TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item onClick={() => {
-                        context.state.client.send({ type: Events.ResetTizenBrewConfig });
-                    }}>
+                    <Item onClick={handleReset}>
                         <h3 className='text-red-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <TrashIcon className='h-8 w-8 text-red-400' />

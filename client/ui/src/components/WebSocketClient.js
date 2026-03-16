@@ -78,15 +78,32 @@ class Client {
             }
             case Events.CheckTizenBrewConfig: {
                 if (!toast) break;
-                if (!payload.exists) { toast.info(i18next.t('tizenBrewConfig.notFound')); break; }
-                if (payload.error) { toast.error(i18next.t('tizenBrewConfig.statError', { error: payload.error })); break; }
+                if (!payload.exists) {
+                    toast.info(i18next.t('tizenBrewConfig.notFound'));
+                    break;
+                }
+                if (payload.error) {
+                    toast.error(i18next.t('tizenBrewConfig.statError', { error: payload.error }));
+                    break;
+                }
+
                 const sizeKb = (payload.size / 1024).toFixed(1);
                 const mtime = new Date(payload.mtime).toLocaleString();
                 const permStr = [
                     payload.readable ? i18next.t('tizenBrewConfig.readable') : null,
                     payload.writable ? i18next.t('tizenBrewConfig.writable') : null,
                 ].filter(Boolean).join(', ') || i18next.t('tizenBrewConfig.noPermissions');
-                toast.info(i18next.t('tizenBrewConfig.fileInfo', { sizeKb, mtime, permStr }), 6000);
+
+                // Build the toast message — header info + full pretty-printed JSON
+                let msg = i18next.t('tizenBrewConfig.fileInfo', { sizeKb, mtime, permStr });
+
+                if (payload.parseError) {
+                    msg += '\n\n⚠️ ' + payload.parseError;
+                } else if (payload.config !== null && payload.config !== undefined) {
+                    msg += '\n\n' + JSON.stringify(payload.config, null, 2);
+                }
+
+                toast.info(msg, 12000);
                 break;
             }
             case Events.ResetTizenBrewConfig: {

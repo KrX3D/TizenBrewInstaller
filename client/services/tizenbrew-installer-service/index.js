@@ -113,7 +113,7 @@ module.exports.onStart = function () {
         }
         mkdirSync(targetDir);
     }
-    
+
     const TB_CONFIG_DEFAULT = {
         modules: [],
         autoLaunchServiceList: [],
@@ -328,9 +328,26 @@ module.exports.onStart = function () {
                         let readable = false, writable = false;
                         try { accessSync(TB_CONFIG, constants.R_OK); readable = true; } catch (_) {}
                         try { accessSync(TB_CONFIG, constants.W_OK); writable = true; } catch (_) {}
+                
+                        // Also read the actual content so the UI can show the full config
+                        let configContent = null;
+                        let configError = null;
+                        if (readable) {
+                            try {
+                                configContent = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
+                            } catch (e) {
+                                configError = 'JSON parse error: ' + e.message;
+                            }
+                        }
+                
                         wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, {
-                            exists: true, readable, writable,
-                            size: stats.size, mtime: stats.mtime.toISOString()
+                            exists: true,
+                            readable,
+                            writable,
+                            size: stats.size,
+                            mtime: stats.mtime.toISOString(),
+                            config: configContent,
+                            parseError: configError
                         }));
                     } catch (e) {
                         wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, { exists: true, error: e.message }));
