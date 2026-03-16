@@ -101,7 +101,6 @@ class Client {
                 break;
             }
             case Events.GetTBModules: {
-                // Dispatch modules list into context so the ManageModules page can read it
                 this.context.dispatch({ type: 'SET_TB_MODULES', payload: payload.modules ?? [] });
                 if (payload.error && toast) {
                     toast.error(i18next.t('tbModules.loadError', { error: payload.error }));
@@ -125,6 +124,8 @@ class Client {
                 if (payload.status === 'success') {
                     this.context.dispatch({ type: 'SET_TB_MODULES', payload: payload.modules });
                     toast.success(i18next.t('tbModules.removeSuccess'));
+                } else if (payload.status === 'notFound') {
+                    toast.info(i18next.t('tizenBrewConfig.notFound'));
                 } else {
                     toast.error(i18next.t('tbModules.removeError', { error: payload.message }));
                 }

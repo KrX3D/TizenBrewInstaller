@@ -331,7 +331,6 @@ module.exports.onStart = function () {
                     }
                     break;
                 }
-                
                 case Events.ResetTizenBrewConfig: {
                     const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
                     if (!existsSync(TB_CONFIG)) {
@@ -352,6 +351,7 @@ module.exports.onStart = function () {
                 case Events.GetTBModules: {
                     const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
                     if (!existsSync(TB_CONFIG)) {
+                        // File absent — return empty list, don't create yet
                         return wsConn.send(wsConn.Event(Events.GetTBModules, { modules: [] }));
                     }
                     try {
@@ -365,19 +365,36 @@ module.exports.onStart = function () {
                 }
                 
                 case Events.AddTBModule: {
-                    // payload: { name: string, url: string }
+                    // payload: { module: string }  e.g. "npm/@foxreis/tizentube" or "gh/user/repo"
                     const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
-                    let config = { modules: [] };
+                    const moduleStr = (payload.module || '').trim();
+                    if (!moduleStr) {
+                        return wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'error', message: 'Empty module string.' }));
+                    }
+                
+                    let config;
                     if (existsSync(TB_CONFIG)) {
-                        try { config = JSON.parse(readFileSync(TB_CONFIG, 'utf8')); } catch (_) {}
-                        if (!Array.isArray(config.modules)) config.modules = [];
+                        try {
+                            config = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
+                            if (!Array.isArray(config.modules)) config.modules = [];
+                        } catch (_) {
+                            // Unreadable / corrupt — start fresh but keep other keys if possible
+                            config = { ...TB_CONFIG_DEFAULT };
+                        }
+                    } else {
+                        // Create fresh config with complete structure
+                        config = { ...TB_CONFIG_DEFAULT };
                     }
-                    // Deduplicate by url
-                    const exists = config.modules.some(m => m.url === payload.url);
-                    if (exists) {
-                        return wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'duplicate' }));
+                
+                    // Deduplicate
+                    if (config.modules.indexOf(moduleStr) !== -1) {
+                        return wsConn.send(wsConn.Event(Events.AddTBModule, {
+                            status: 'duplicate',
+                            modules: config.modules
+                        }));
                     }
-                    config.modules.push({ name: payload.name, url: payload.url, enabled: true });
+                
+                    config.modules.push(moduleStr);
                     try {
                         writeFileSync(TB_CONFIG, JSON.stringify(config, null, 4));
                         wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'success', modules: config.modules }));
@@ -388,17 +405,25 @@ module.exports.onStart = function () {
                 }
                 
                 case Events.RemoveTBModule: {
-                    // payload: { url: string }
+                    // payload: { module: string }
                     const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
                     if (!existsSync(TB_CONFIG)) {
                         return wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'notFound' }));
                     }
                     let config;
-                    try { config = JSON.parse(readFileSync(TB_CONFIG, 'utf8')); } catch (e) {
+                    try {
+                        config = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
+                    } catch (e) {
                         return wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'error', message: e.message }));
                     }
                     if (!Array.isArray(config.modules)) config.modules = [];
-                    config.modules = config.modules.filter(m => m.url !== payload.url);
+                
+                    const idx = config.modules.indexOf(payload.module);
+                    if (idx !== -1) config.modules.splice(idx, 1);
+                
+                    // If autoLaunchModule pointed at the removed module, clear it
+                    if (config.autoLaunchModule === payload.module) config.autoLaunchModule = '';
+                
                     try {
                         writeFileSync(TB_CONFIG, JSON.stringify(config, null, 4));
                         wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'success', modules: config.modules }));
