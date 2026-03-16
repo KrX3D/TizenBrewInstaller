@@ -113,6 +113,12 @@ module.exports.onStart = function () {
         }
         mkdirSync(targetDir);
     }
+    
+    const TB_CONFIG_DEFAULT = {
+        modules: [],
+        autoLaunchServiceList: [],
+        autoLaunchModule: ''
+    };
 
     wsServer.on('connection', (ws) => {
         const wsConn = new Connection(ws);

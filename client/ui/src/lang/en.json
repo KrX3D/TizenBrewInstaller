@@ -1,7 +1,8 @@
 {
     "service": {
         "alreadyRunning": "Service is already running.",
-        "started": "Service started."
+        "started": "Service started.",
+        "failedToStart": "Service failed to start after multiple attempts. Please restart the app."
     },
     "errors": {
         "debuggingNotEnabled": "Error: Could not connect to the SDB Daemon. Are you sure you changed the Host PC IP to 127.0.0.1? If you have, hold the power button till you see the Samsung logo."
@@ -23,10 +24,12 @@
         "resigningDeviceSameNetwork": "Make sure your device is on the same network as your TV."
     },
     "installer": {
-        "installTB": "Install TizenBrew",
+        "install": "Install {{label}}",
+        "update": "Update {{label}}",
+        "installedVersion": "Installed: {{version}}",
+        "versionUnknown": "Version: unknown (custom repo)",
         "installTBI": "Install TizenBrew Installer",
         "connectToTV": "Connect to TV",
-        "updateTB": "Update TizenBrew",
         "installFromUSB": "Install from USB",
         "installFromGH": "Install from GitHub",
         "installingAgain": "TizenBrew Installer is installed as an USB Demo Package. It will now be reinstalled as a normal package.",
@@ -67,11 +70,11 @@
         "pageDesc": "Modules are loaded by TizenBrew on next launch.",
         "empty": "No modules installed yet.",
         "addTitle": "Add a module",
-        "namePlaceholder": "Module name (e.g. YouTube)",
-        "urlPlaceholder": "URL (e.g. https://example.com/app)",
+        "namePlaceholder": "@foxreis/tizentube",
+        "urlPlaceholder": "user/repo",
         "addButton": "Add module",
         "addSuccess": "Module added successfully.",
-        "duplicate": "A module with that URL already exists.",
+        "duplicate": "That module is already in the list.",
         "addError": "Failed to add module: {{error}}",
         "removeSuccess": "Module removed.",
         "removeError": "Failed to remove module: {{error}}",

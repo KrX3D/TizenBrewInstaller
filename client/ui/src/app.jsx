@@ -55,13 +55,13 @@ export default function App() {
             </div>
           </div>
           <Router>
-            <Route component={Home}            path="/ui/dist/index.html" />
-            <Route component={Desktop}         path="/ui/dist/index.html/desktop" />
+            <Route component={Home}             path="/ui/dist/index.html" />
+            <Route component={Desktop}          path="/ui/dist/index.html/desktop" />
             <Route component={InstallFromGitHub} path="/ui/dist/index.html/install-from-gh" />
-            <Route component={InstallFromUSB}  path="/ui/dist/index.html/install-from-usb" />
-            <Route component={SavedRepos}      path="/ui/dist/index.html/saved-repos" />
-            <Route component={ManageModules}   path="/ui/dist/index.html/manage-modules" />
-            <Route component={About}           path="/ui/dist/index.html/about" />
+            <Route component={InstallFromUSB}   path="/ui/dist/index.html/install-from-usb" />
+            <Route component={SavedRepos}       path="/ui/dist/index.html/saved-repos" />
+            <Route component={ManageModules}    path="/ui/dist/index.html/manage-modules" />
+            <Route component={About}            path="/ui/dist/index.html/about" />
           </Router>
         </div>
         <ToastContainer toasts={toasts} onDismiss={toast.dismiss} />
@@ -70,20 +70,70 @@ export default function App() {
   );
 }
 
+// ── Service startup ────────────────────────────────────────────────────────────
+// Problem: window.location.reload() fires immediately after the service launch
+// signal is sent, before the service process is actually ready to accept WS
+// connections. This causes a reload loop (service started → reload → WS fails
+// again → launch again → reload again…).
+//
+// Fix: track how many times we've launched in localStorage so we don't keep
+// relaunching; wait 3 seconds after the launch signal before reloading so the
+// service process has time to bind its port.
+//
+const LAUNCH_COUNT_KEY = 'tbInstallerServiceLaunchCount';
+const LAUNCH_TS_KEY    = 'tbInstallerServiceLaunchTs';
+const MAX_LAUNCHES     = 3;   // give up after 3 launch attempts per cold boot
+const RELOAD_DELAY_MS  = 3000; // wait 3 s for the service to start before reload
+
 function startService(context) {
-  const testWS = new WebSocket('ws://localhost:8091');
-  testWS.onerror = () => {
-    const pkgId = tizen.application.getCurrentApplication().appInfo.packageId;
-    const serviceId = pkgId + ".InstallerService";
-    tizen.application.launchAppControl(
-      new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/service"),
-      serviceId,
-      function () { context.dispatch({ type: 'SET_STATE', payload: 'service.started' }); window.location.reload(); },
-      function (e) { alert("Launch Service failed: " + e.message); }
-    );
+  // Reset the counter if it's been more than 30 s since the last launch attempt
+  // (i.e. user manually reopened the app after a crash)
+  const lastTs = Number(localStorage.getItem(LAUNCH_TS_KEY) || 0);
+  if (Date.now() - lastTs > 30_000) {
+    localStorage.removeItem(LAUNCH_COUNT_KEY);
   }
+
+  const testWS = new WebSocket('ws://localhost:8091');
+
+  testWS.onerror = () => {
+    const launches = Number(localStorage.getItem(LAUNCH_COUNT_KEY) || 0);
+    if (launches >= MAX_LAUNCHES) {
+      // Stop trying — show an error instead of an infinite reload loop
+      context.dispatch({
+        type: 'SET_ERROR',
+        payload: { message: 'service.failedToStart', disappear: false }
+      });
+      localStorage.removeItem(LAUNCH_COUNT_KEY);
+      localStorage.removeItem(LAUNCH_TS_KEY);
+      return;
+    }
+
+    localStorage.setItem(LAUNCH_COUNT_KEY, String(launches + 1));
+    localStorage.setItem(LAUNCH_TS_KEY, String(Date.now()));
+
+    const pkgId = tizen.application.getCurrentApplication().appInfo.packageId;
+    const serviceId = pkgId + '.InstallerService';
+
+    tizen.application.launchAppControl(
+      new tizen.ApplicationControl('http://tizen.org/appcontrol/operation/service'),
+      serviceId,
+      function () {
+        context.dispatch({ type: 'SET_STATE', payload: 'service.started' });
+        // Give the service process time to bind port 8091 before reloading
+        setTimeout(() => window.location.reload(), RELOAD_DELAY_MS);
+      },
+      function (e) {
+        alert('Launch Service failed: ' + e.message);
+      }
+    );
+  };
+
   testWS.onopen = () => {
+    // Connected — clear the launch counter; we're good
+    localStorage.removeItem(LAUNCH_COUNT_KEY);
+    localStorage.removeItem(LAUNCH_TS_KEY);
+
     context.dispatch({ type: 'SET_STATE', payload: 'service.alreadyRunning' });
     context.dispatch({ type: 'SET_CLIENT', payload: new Client(context) });
-  }
+  };
 }
