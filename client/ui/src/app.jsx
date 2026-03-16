@@ -8,6 +8,7 @@ import Client from './components/WebSocketClient.js';
 import InstallFromGitHub from './pages/InstallFromGitHub.jsx';
 import InstallFromUSB from './pages/InstallFromUSB.jsx';
 import SavedRepos from './pages/SavedRepos.jsx';
+import ManageModules from './pages/ManageModules.jsx';
 import About from './pages/About.jsx';
 import './components/i18n.js';
 import { ExclamationCircleIcon } from '@heroicons/react/16/solid';
@@ -54,12 +55,13 @@ export default function App() {
             </div>
           </div>
           <Router>
-            <Route component={Home} path="/ui/dist/index.html" />
-            <Route component={Desktop} path="/ui/dist/index.html/desktop" />
+            <Route component={Home}            path="/ui/dist/index.html" />
+            <Route component={Desktop}         path="/ui/dist/index.html/desktop" />
             <Route component={InstallFromGitHub} path="/ui/dist/index.html/install-from-gh" />
-            <Route component={InstallFromUSB} path="/ui/dist/index.html/install-from-usb" />
-            <Route component={SavedRepos} path="/ui/dist/index.html/saved-repos" />
-            <Route component={About} path="/ui/dist/index.html/about" />
+            <Route component={InstallFromUSB}  path="/ui/dist/index.html/install-from-usb" />
+            <Route component={SavedRepos}      path="/ui/dist/index.html/saved-repos" />
+            <Route component={ManageModules}   path="/ui/dist/index.html/manage-modules" />
+            <Route component={About}           path="/ui/dist/index.html/about" />
           </Router>
         </div>
         <ToastContainer toasts={toasts} onDismiss={toast.dismiss} />

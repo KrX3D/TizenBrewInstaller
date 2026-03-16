@@ -56,9 +56,27 @@
         "desc": "{{count}} saved repo(s)",
         "active": "Active",
         "pageTitle": "Saved Repos",
-        "pageDesc": "Select a repo to make it active for install/update. Active repo is highlighted in purple.",
+        "pageDesc": "Select a repo to set it active. Use ◀▶ to reach Install / Delete.",
         "empty": "No saved repos yet. Install from GitHub to add one.",
-        "hint": "Tap row to set active  •  arrow button to install now  •  trash to remove"
+        "hint": "◀▶ switch action  |  OK = confirm  |  ▲▼ switch repo"
+    },
+    "tbModules": {
+        "homeButton": "Manage Modules",
+        "homeDesc": "Add or remove TizenBrew modules in tizenbrewConfig.json.",
+        "pageTitle": "Manage Modules",
+        "pageDesc": "Modules are loaded by TizenBrew on next launch.",
+        "empty": "No modules installed yet.",
+        "addTitle": "Add a module",
+        "namePlaceholder": "Module name (e.g. YouTube)",
+        "urlPlaceholder": "URL (e.g. https://example.com/app)",
+        "addButton": "Add module",
+        "addSuccess": "Module added successfully.",
+        "duplicate": "A module with that URL already exists.",
+        "addError": "Failed to add module: {{error}}",
+        "removeSuccess": "Module removed.",
+        "removeError": "Failed to remove module: {{error}}",
+        "loadError": "Could not load modules: {{error}}",
+        "hint": "OK on a module row = remove it  |  Fill fields and press Add"
     },
     "__contributors": [
         "reisxd"

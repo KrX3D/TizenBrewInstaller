@@ -315,28 +315,19 @@ module.exports.onStart = function () {
                 case Events.CheckTizenBrewConfig: {
                     const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
                     if (!existsSync(TB_CONFIG)) {
-                        return wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, {
-                            exists: false
-                        }));
+                        return wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, { exists: false }));
                     }
                     try {
                         const stats = statSync(TB_CONFIG);
-                        let readable = false;
-                        let writable = false;
+                        let readable = false, writable = false;
                         try { accessSync(TB_CONFIG, constants.R_OK); readable = true; } catch (_) {}
                         try { accessSync(TB_CONFIG, constants.W_OK); writable = true; } catch (_) {}
                         wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, {
-                            exists: true,
-                            readable,
-                            writable,
-                            size: stats.size,
-                            mtime: stats.mtime.toISOString()
+                            exists: true, readable, writable,
+                            size: stats.size, mtime: stats.mtime.toISOString()
                         }));
                     } catch (e) {
-                        wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, {
-                            exists: true,
-                            error: e.message
-                        }));
+                        wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, { exists: true, error: e.message }));
                     }
                     break;
                 }
@@ -344,25 +335,75 @@ module.exports.onStart = function () {
                 case Events.ResetTizenBrewConfig: {
                     const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
                     if (!existsSync(TB_CONFIG)) {
-                        return wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, {
-                            status: 'notFound'
-                        }));
+                        return wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, { status: 'notFound' }));
                     }
-                    try {
-                        accessSync(TB_CONFIG, constants.W_OK);
-                    } catch (_) {
-                        return wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, {
-                            status: 'permissionDenied'
-                        }));
+                    try { accessSync(TB_CONFIG, constants.W_OK); }
+                    catch (_) {
+                        return wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, { status: 'permissionDenied' }));
                     }
                     try {
                         unlinkSync(TB_CONFIG);
                         wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, { status: 'success' }));
                     } catch (e) {
-                        wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, {
-                            status: 'error',
-                            message: e.message
-                        }));
+                        wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, { status: 'error', message: e.message }));
+                    }
+                    break;
+                }
+                case Events.GetTBModules: {
+                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
+                    if (!existsSync(TB_CONFIG)) {
+                        return wsConn.send(wsConn.Event(Events.GetTBModules, { modules: [] }));
+                    }
+                    try {
+                        const raw = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
+                        const modules = Array.isArray(raw.modules) ? raw.modules : [];
+                        wsConn.send(wsConn.Event(Events.GetTBModules, { modules }));
+                    } catch (e) {
+                        wsConn.send(wsConn.Event(Events.GetTBModules, { modules: [], error: e.message }));
+                    }
+                    break;
+                }
+                
+                case Events.AddTBModule: {
+                    // payload: { name: string, url: string }
+                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
+                    let config = { modules: [] };
+                    if (existsSync(TB_CONFIG)) {
+                        try { config = JSON.parse(readFileSync(TB_CONFIG, 'utf8')); } catch (_) {}
+                        if (!Array.isArray(config.modules)) config.modules = [];
+                    }
+                    // Deduplicate by url
+                    const exists = config.modules.some(m => m.url === payload.url);
+                    if (exists) {
+                        return wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'duplicate' }));
+                    }
+                    config.modules.push({ name: payload.name, url: payload.url, enabled: true });
+                    try {
+                        writeFileSync(TB_CONFIG, JSON.stringify(config, null, 4));
+                        wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'success', modules: config.modules }));
+                    } catch (e) {
+                        wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'error', message: e.message }));
+                    }
+                    break;
+                }
+                
+                case Events.RemoveTBModule: {
+                    // payload: { url: string }
+                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
+                    if (!existsSync(TB_CONFIG)) {
+                        return wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'notFound' }));
+                    }
+                    let config;
+                    try { config = JSON.parse(readFileSync(TB_CONFIG, 'utf8')); } catch (e) {
+                        return wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'error', message: e.message }));
+                    }
+                    if (!Array.isArray(config.modules)) config.modules = [];
+                    config.modules = config.modules.filter(m => m.url !== payload.url);
+                    try {
+                        writeFileSync(TB_CONFIG, JSON.stringify(config, null, 4));
+                        wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'success', modules: config.modules }));
+                    } catch (e) {
+                        wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'error', message: e.message }));
                     }
                     break;
                 }

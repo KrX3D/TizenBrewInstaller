@@ -1,12 +1,16 @@
 import { createContext } from 'preact';
 import { useReducer } from 'preact/hooks';
 
+const DEFAULT_REPOS = ['reisxd/TizenBrew', 'reisxd/TizenBrewInstaller'];
+
 function loadRepoList() {
     try {
         const stored = localStorage.getItem('tizenBrewRepoList');
         if (stored) return JSON.parse(stored);
     } catch (_) {}
-    return ['reisxd/TizenBrew'];
+    // First install — seed both defaults
+    saveRepoList(DEFAULT_REPOS);
+    return DEFAULT_REPOS;
 }
 
 function saveRepoList(list) {
@@ -17,6 +21,7 @@ const initialState = {
     sharedData: {
         tizenBrewRepo: localStorage.getItem('tizenBrewRepo') || 'reisxd/TizenBrew',
         repoList: loadRepoList(),
+        tbModules: [],
         state: null,
         directory: [],
         error: { message: null, dissapear: false },
@@ -46,6 +51,8 @@ function reducer(state, action) {
         case 'SET_TIZENBREW_REPO':
             localStorage.setItem('tizenBrewRepo', action.payload);
             return { ...state, sharedData: { ...state.sharedData, tizenBrewRepo: action.payload } };
+        case 'SET_TB_MODULES':
+            return { ...state, sharedData: { ...state.sharedData, tbModules: action.payload } };
         case 'ADD_REPO': {
             const repo = action.payload.trim();
             if (!repo) return state;
