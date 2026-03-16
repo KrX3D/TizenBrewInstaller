@@ -1,5 +1,5 @@
 import { ArrowDownIcon, ArrowPathIcon, TrashIcon, MagnifyingGlassIcon, BookmarkIcon } from '@heroicons/react/16/solid';
-import { useContext } from 'react';
+import { useContext, useRef } from 'react';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import Item from '../components/Item.jsx';
 import SignInQrCode from '../assets/signInQrCode.png';
@@ -13,6 +13,7 @@ export default function Home() {
     const context = useContext(GlobalStateContext);
     const { t } = useTranslation();
     const loc = useLocation();
+    const didRunRef = useRef(false);
 
     if (!isTizenApiAvailable) loc.route('/ui/dist/index.html/desktop');
 
@@ -25,14 +26,14 @@ export default function Home() {
     } catch (e) { }
 
     useEffect(() => {
-        const { client, sharedData } = context.state;
+        const { client } = context.state;
         if (
             client !== null &&
             client.socket &&
             client.socket.readyState === WebSocket.OPEN &&
-            !sharedData.tizenBrewConfigChecked   // ← lives in context, survives remounts
+            !didRunRef.current
         ) {
-            context.dispatch({ type: 'SET_TIZENBREW_CONFIG_CHECKED' });
+            didRunRef.current = true;
 
             const appInfo = tizen.application.getAppInfo();
             if (appInfo.packageId === 'xvvl3S1bTU') {
@@ -45,11 +46,8 @@ export default function Home() {
                     alert(t('installer.alreadyInstalled'));
                 }
             } catch (e) { }
-
-            client.send({ type: Events.CheckTizenBrewConfig });
+            // No auto-check here — user can click "Check TB Config" manually
         }
-    // Only re-run when the client reference itself changes (new connection)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [context.state.client]);
 
     return (
