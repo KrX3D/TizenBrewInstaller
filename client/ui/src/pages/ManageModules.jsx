@@ -5,11 +5,7 @@ import { TrashIcon, CubeIcon, PlusIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
 import { Events } from '../components/WebSocketClient.js';
 
-// Module string format examples:
-//   npm/@foxreis/tizentube
-//   gh/user/repo
-
-// ─── Single module row ────────────────────────────────────────────────────────
+// ─── Module row ───────────────────────────────────────────────────────────────
 function ModuleRow({ mod, focusKey, onRemove }) {
     const { ref, focused } = useFocusable({
         focusKey,
@@ -20,11 +16,8 @@ function ModuleRow({ mod, focusKey, onRemove }) {
         if (focused) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, [focused]);
 
-    // Derive a display name: last segment after the type prefix
-    // "npm/@foxreis/tizentube" → "@foxreis/tizentube"
-    // "gh/user/repo"          → "user/repo"
     const parts = mod.split('/');
-    const type = parts[0];   // npm | gh
+    const type = parts[0];
     const name = parts.slice(1).join('/');
 
     return (
@@ -40,7 +33,6 @@ function ModuleRow({ mod, focusKey, onRemove }) {
                 <p className="text-slate-100 font-mono text-base truncate">{name}</p>
                 <p className="text-slate-500 text-xs">{type}</p>
             </div>
-            {/* Trash — also fires on OK when row is focused */}
             <div
                 onClick={onRemove}
                 className={[
@@ -54,27 +46,35 @@ function ModuleRow({ mod, focusKey, onRemove }) {
     );
 }
 
-// ─── Add-module form ──────────────────────────────────────────────────────────
-function AddForm({ onAdd }) {
-    const [type, setType]       = useState('npm');  // npm | gh
-    const [name, setName]       = useState('');
-    const inputRef              = useRef(null);
-    const confirmedRef          = useRef(false);
-    const { t }                 = useTranslation();
+// ─── Add row — single focusable input ────────────────────────────────────────
+// The spatial-nav item is a wrapper div. When the user presses OK on it the
+// real <input> receives .focus() which opens the TV virtual keyboard.
+// Pressing OK / Fertig inside the keyboard confirms and calls submit().
+function AddRow({ onAdd }) {
+    const [value, setValue] = useState('');
+    const inputRef   = useRef(null);
+    const confirmedRef = useRef(false);
+    const { t } = useTranslation();
 
-    const { ref: btnRef, focused: btnFocused } = useFocusable({
-        focusKey: 'add-module-btn',
-        onEnterPress: submit,
+    const { ref: wrapRef, focused } = useFocusable({
+        focusKey: 'add-module-input',
+        onEnterPress: () => {
+            // OK while the wrapper is spatially focused → open keyboard
+            inputRef.current?.focus();
+        },
     });
 
     function submit() {
-        const trimmed = name.trim();
+        const trimmed = value.trim();
         if (!trimmed) return;
-        onAdd(`${type}/${trimmed}`);
-        setName('');
+        onAdd(trimmed);
+        setValue('');
     }
 
     function handleKeyDown(e) {
+        // Arrow keys — stop spatial nav stealing cursor movement
+        if (e.keyCode >= 37 && e.keyCode <= 40) e.stopPropagation();
+        // OK (13) or Samsung "Fertig" (65376) — confirm input
         if (e.keyCode === 13 || e.keyCode === 65376) {
             confirmedRef.current = true;
             inputRef.current?.blur();
@@ -84,73 +84,66 @@ function AddForm({ onAdd }) {
     function handleBlur() {
         if (confirmedRef.current) {
             confirmedRef.current = false;
-            // Move focus to add button after keyboard closes
-            setTimeout(() => setFocus('add-module-btn'), 50);
+            submit();
         }
     }
-
-    const placeholder = type === 'npm' ? '@foxreis/tizentube' : 'user/repo';
 
     return (
         <div className="flex flex-col gap-2 rounded-xl border-2 border-indigo-700 bg-slate-900 px-4 py-3 mt-2">
             <p className="text-indigo-300 font-semibold text-sm">{t('tbModules.addTitle')}</p>
+            <p className="text-slate-500 text-xs">{t('tbModules.addHint')}</p>
 
-            {/* Type toggle */}
-            <div className="flex gap-2">
-                {['npm', 'gh'].map(t2 => (
-                    <button
-                        key={t2}
-                        onClick={() => { setType(t2); setName(''); }}
-                        className={[
-                            'px-4 py-1 rounded-lg text-sm font-bold border-2 transition-colors',
-                            type === t2
-                                ? 'border-indigo-400 bg-indigo-700 text-white'
-                                : 'border-slate-600 bg-slate-800 text-slate-300'
-                        ].join(' ')}
-                    >
-                        {t2}
-                    </button>
-                ))}
-                <span className="text-slate-500 text-xs self-center">
-                    {type === 'npm' ? 'npm package path' : 'GitHub user/repo'}
-                </span>
-            </div>
-
-            {/* Name input */}
-            <div className="flex items-center gap-2">
-                <span className="text-slate-400 text-sm font-mono flex-shrink-0">{type}/</span>
+            {/* Focusable wrapper — press OK to open keyboard */}
+            <div
+                ref={wrapRef}
+                className={[
+                    'flex items-center gap-2 rounded-lg border-2 px-3 py-2 bg-slate-800 cursor-pointer transition-all',
+                    focused ? 'border-indigo-400 ring-2 ring-indigo-300' : 'border-slate-600'
+                ].join(' ')}
+                onClick={() => inputRef.current?.focus()}
+            >
                 <input
                     ref={inputRef}
                     type="text"
-                    value={name}
-                    placeholder={placeholder}
-                    className="flex-1 p-2 rounded-lg bg-slate-800 text-slate-100 text-sm border border-slate-600 font-mono"
-                    onChange={e => setName(e.target.value)}
+                    value={value}
+                    placeholder={t('tbModules.inputPlaceholder')}
+                    className="flex-1 bg-transparent text-slate-100 text-sm font-mono outline-none"
+                    onChange={e => setValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onBlur={handleBlur}
                 />
             </div>
 
-            {/* Preview of what will be written */}
-            {name.trim() && (
+            {/* Preview */}
+            {value.trim() && (
                 <p className="text-slate-500 text-xs font-mono">
-                    Will add: <span className="text-indigo-300">{type}/{name.trim()}</span>
+                    → <span className="text-indigo-300">{value.trim()}</span>
                 </p>
             )}
 
             {/* Add button */}
-            <div
-                ref={btnRef}
-                onClick={submit}
-                className={[
-                    'flex items-center justify-center gap-2 px-4 py-2 rounded-lg',
-                    'bg-indigo-600 text-white font-semibold text-sm cursor-pointer',
-                    btnFocused ? 'ring-2 ring-white' : ''
-                ].join(' ')}
-            >
-                <PlusIcon className="h-5 w-5" />
-                {t('tbModules.addButton')}
-            </div>
+            <AddButton onSubmit={submit} label={t('tbModules.addButton')} />
+        </div>
+    );
+}
+
+function AddButton({ onSubmit, label }) {
+    const { ref, focused } = useFocusable({
+        focusKey: 'add-module-btn',
+        onEnterPress: onSubmit,
+    });
+    return (
+        <div
+            ref={ref}
+            onClick={onSubmit}
+            className={[
+                'flex items-center justify-center gap-2 px-4 py-2 rounded-lg',
+                'bg-indigo-600 text-white font-semibold text-sm cursor-pointer',
+                focused ? 'ring-2 ring-white' : ''
+            ].join(' ')}
+        >
+            <PlusIcon className="h-5 w-5" />
+            {label}
         </div>
     );
 }
@@ -162,17 +155,17 @@ export default function ManageModules() {
     const modules = state.sharedData.tbModules ?? [];
 
     useEffect(() => {
-        // Load current modules from config on mount
         state.client.send({ type: Events.GetTBModules });
         setTimeout(() => {
-            setFocus(modules.length > 0 ? 'module-row-0' : 'add-module-btn');
+            setFocus(modules.length > 0 ? 'module-row-0' : 'add-module-input');
         }, 100);
     }, []);
 
-    // Re-focus first row whenever list changes (e.g. after remove)
     useEffect(() => {
         if (modules.length > 0) {
             setTimeout(() => setFocus('module-row-0'), 50);
+        } else {
+            setTimeout(() => setFocus('add-module-input'), 50);
         }
     }, [modules.length]);
 
@@ -218,7 +211,7 @@ export default function ManageModules() {
                     ))
                 )}
 
-                <AddForm onAdd={addModule} />
+                <AddRow onAdd={addModule} />
             </div>
 
             <p className="mt-4 mb-2 text-slate-500 text-xs text-center">

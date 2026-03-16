@@ -1,8 +1,7 @@
 {
     "service": {
         "alreadyRunning": "Service is already running.",
-        "started": "Service started.",
-        "failedToStart": "Service failed to start after multiple attempts. Please restart the app."
+        "started": "Service started."
     },
     "errors": {
         "debuggingNotEnabled": "Error: Could not connect to the SDB Daemon. Are you sure you changed the Host PC IP to 127.0.0.1? If you have, hold the power button till you see the Samsung logo."
@@ -70,8 +69,8 @@
         "pageDesc": "Modules are loaded by TizenBrew on next launch.",
         "empty": "No modules installed yet.",
         "addTitle": "Add a module",
-        "namePlaceholder": "@foxreis/tizentube",
-        "urlPlaceholder": "user/repo",
+        "addHint": "Enter the full module string, e.g. npm/@foxreis/tizentube or gh/user/repo",
+        "inputPlaceholder": "npm/@foxreis/tizentube",
         "addButton": "Add module",
         "addSuccess": "Module added successfully.",
         "duplicate": "That module is already in the list.",
@@ -79,7 +78,7 @@
         "removeSuccess": "Module removed.",
         "removeError": "Failed to remove module: {{error}}",
         "loadError": "Could not load modules: {{error}}",
-        "hint": "OK on a module row = remove it  |  Fill fields and press Add"
+        "hint": "Navigate to input row and press OK to open keyboard  |  OK on module row = remove"
     },
     "__contributors": [
         "reisxd"

@@ -8,17 +8,16 @@ import { useLocation } from 'preact-iso';
 import { Events } from '../components/WebSocketClient.js';
 import { useEffect } from 'preact/hooks';
 
-// ── Known repo → Tizen package-ID mapping ─────────────────────────────────────
-// Add entries here as more repos become known.
+// ── Known repo → Tizen package-ID mapping ────────────────────────────────────
 const REPO_TO_PACKAGE_ID = {
     'reisxd/TizenBrew':          'xvvl3S1bvH.TizenBrewStandalone',
     'reisxd/TizenBrewInstaller': 'xvvl3S1bTI.TizenBrewStandalone',
 };
 
-// Extract the last path segment and capitalise the first character.
-// "reisxd/TizenBrew"        → "TizenBrew"
+// Extract last path segment and capitalise first character.
+// "reisxd/TizenBrew"          → "TizenBrew"
 // "reisxd/TizenBrewInstaller" → "TizenBrewInstaller"
-// "owner/my-app"            → "My-app"
+// "owner/my-app"              → "My-app"
 function repoLabel(repo) {
     if (!repo) return 'TizenBrew';
     const parts = repo.split('/');
@@ -26,7 +25,7 @@ function repoLabel(repo) {
     return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
-// Return { installed: bool, version: string|null } for the currently active repo.
+// Return { installed: bool, version: string|null } for the active repo.
 function getInstalledInfo(repo) {
     if (typeof tizen === 'undefined') return { installed: false, version: null };
     const pkgId = REPO_TO_PACKAGE_ID[repo];
@@ -52,7 +51,6 @@ export default function Home() {
     const label = repoLabel(activeRepo);
     const { installed, version } = getInstalledInfo(activeRepo);
 
-    // On-device package checks for the two known repos (for the package-check alert)
     const ownPkgId = (() => {
         try { return tizen.application.getAppInfo().packageId; } catch (_) { return null; }
     })();
