@@ -17,6 +17,8 @@ const initialState = {
     sharedData: {
         tizenBrewRepo: localStorage.getItem('tizenBrewRepo') || 'reisxd/TizenBrew',
         repoList: loadRepoList(),
+        // Persists across Home remounts so the auto-check only fires once per app session
+        tizenBrewConfigChecked: false,
         state: null,
         directory: [],
         error: { message: null, dissapear: false },
@@ -46,6 +48,8 @@ function reducer(state, action) {
         case 'SET_TIZENBREW_REPO':
             localStorage.setItem('tizenBrewRepo', action.payload);
             return { ...state, sharedData: { ...state.sharedData, tizenBrewRepo: action.payload } };
+        case 'SET_TIZENBREW_CONFIG_CHECKED':
+            return { ...state, sharedData: { ...state.sharedData, tizenBrewConfigChecked: true } };
         case 'ADD_REPO': {
             const repo = action.payload.trim();
             if (!repo) return state;

@@ -1,5 +1,5 @@
 import { ArrowDownIcon, ArrowPathIcon, TrashIcon, MagnifyingGlassIcon, BookmarkIcon } from '@heroicons/react/16/solid';
-import { useContext, useRef } from 'react';
+import { useContext } from 'react';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import Item from '../components/Item.jsx';
 import SignInQrCode from '../assets/signInQrCode.png';
@@ -13,8 +13,6 @@ export default function Home() {
     const context = useContext(GlobalStateContext);
     const { t } = useTranslation();
     const loc = useLocation();
-    // Prevent the auto-check from firing more than once even if deps re-evaluate
-    const didAutoCheck = useRef(false);
 
     if (!isTizenApiAvailable) loc.route('/ui/dist/index.html/desktop');
 
@@ -27,23 +25,20 @@ export default function Home() {
     } catch (e) { }
 
     useEffect(() => {
+        const { client, sharedData } = context.state;
         if (
-            context.state.client !== null &&
-            context.state.client.socket &&
-            context.state.client.socket.readyState === WebSocket.OPEN &&
-            !didAutoCheck.current
+            client !== null &&
+            client.socket &&
+            client.socket.readyState === WebSocket.OPEN &&
+            !sharedData.tizenBrewConfigChecked   // ← lives in context, survives remounts
         ) {
-            didAutoCheck.current = true;
+            context.dispatch({ type: 'SET_TIZENBREW_CONFIG_CHECKED' });
 
             const appInfo = tizen.application.getAppInfo();
             if (appInfo.packageId === 'xvvl3S1bTU') {
                 alert(t('installer.installingAgain'));
-                context.state.client.send({
-                    type: Events.InstallPackage,
-                    payload: { url: 'reisxd/TizenBrewInstaller' }
-                });
+                client.send({ type: Events.InstallPackage, payload: { url: 'reisxd/TizenBrewInstaller' } });
             }
-
             try {
                 if (appInfo.packageId === 'xvvl3S1bTI') {
                     tizen.application.getAppInfo('xvvl3S1bTU.TizenBrewStandalone');
@@ -51,9 +46,11 @@ export default function Home() {
                 }
             } catch (e) { }
 
-            context.state.client.send({ type: Events.CheckTizenBrewConfig });
+            client.send({ type: Events.CheckTizenBrewConfig });
         }
-    }, [context.state.client, context.state.client?.socket?.readyState]);
+    // Only re-run when the client reference itself changes (new connection)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [context.state.client]);
 
     return (
         <div className="relative isolate lg:px-8">
