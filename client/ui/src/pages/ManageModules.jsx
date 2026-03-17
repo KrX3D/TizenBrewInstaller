@@ -47,7 +47,7 @@ function ModuleRow({ mod, focusKey, onRemove }) {
 }
 
 // ─── Add row ──────────────────────────────────────────────────────────────────
-function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef }) {
+function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef, keyboardOpenRef }) {
     const exampleModule = 'npm/@foxreis/tizentube';
     const [value, setValue] = useState(exampleModule);
     const inputRef = externalInputRef;
@@ -68,7 +68,7 @@ function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef }) {
         setValue('');
     }
 
-    // Expose submit so the page-level green handler can call it
+    // Expose submit to the page-level green handler
     if (onSubmitRef) onSubmitRef.current = submit;
 
     function handleKeyDown(e) {
@@ -79,7 +79,7 @@ function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef }) {
             return;
         }
 
-        // OK (13), Fertig (65376), or Green (404) — confirm
+        // OK (13), Fertig (65376), or Green (404) inside the input — confirm
         if (e.keyCode === 13 || e.keyCode === 65376 || e.keyCode === 404) {
             e.preventDefault?.();
             e.stopPropagation?.();
@@ -89,10 +89,19 @@ function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef }) {
     }
 
     function handleBlur() {
+        if (keyboardOpenRef) keyboardOpenRef.current = false;
         if (confirmedRef.current) {
             confirmedRef.current = false;
             submit();
         }
+    }
+
+    function handleFocus(e) {
+        // Track that the keyboard is (or was recently) open.
+        // This survives on Tizen 5.5 where the virtual keyboard steals
+        // document.activeElement so we can't rely on that check.
+        if (keyboardOpenRef) keyboardOpenRef.current = true;
+        e.target.select();
     }
 
     return (
@@ -117,7 +126,7 @@ function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef }) {
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onBlur={handleBlur}
-                    onFocus={e => e.target.select()}
+                    onFocus={handleFocus}
                 />
             </div>
 
@@ -159,9 +168,12 @@ export default function ManageModules() {
     const { t } = useTranslation();
     const modules = state.sharedData.tbModules ?? [];
 
-    // Shared refs so the page-level green handler can reach into AddRow
-    const addInputRef   = useRef(null);
-    const addSubmitRef  = useRef(null);
+    const addInputRef    = useRef(null);
+    const addSubmitRef   = useRef(null);
+    // Tracks whether the virtual keyboard is open.
+    // We use this instead of document.activeElement because Tizen 5.5's
+    // virtual keyboard can steal activeElement while the input is logically active.
+    const keyboardOpenRef = useRef(false);
 
     useEffect(() => {
         state.client.send({ type: Events.GetTBModules });
@@ -178,25 +190,27 @@ export default function ManageModules() {
         }
     }, [modules.length]);
 
-    // ── Page-level green button handler ──────────────────────────────────────
-    // Green (404): if the input is already open (document.activeElement === inputRef),
-    // submit; otherwise focus the input to open the keyboard.
+    // ── Page-level green button (404) handler ─────────────────────────────────
+    // First green press  → focus input (opens keyboard)
+    // Second green press → keyboard is open (keyboardOpenRef = true) → submit
+    //
+    // We check keyboardOpenRef instead of document.activeElement because on
+    // Tizen 5.5 the virtual keyboard overlay steals activeElement from the input.
     useEffect(() => {
         function onKeyDown(e) {
             if (e.keyCode !== 404) return;
             e.preventDefault();
             e.stopPropagation();
 
-            const inputEl = addInputRef.current;
-            if (!inputEl) return;
-
-            if (document.activeElement === inputEl) {
-                // Keyboard is open — confirm the entry
+            if (keyboardOpenRef.current) {
+                // Keyboard is open → confirm the entry
                 addSubmitRef.current?.();
+                // keyboardOpenRef will be reset in handleBlur after submit
             } else {
-                // Keyboard is closed — open it
+                // Keyboard is closed → open it
                 setFocus('add-module-input');
-                setTimeout(() => inputEl.focus(), 50);
+                setTimeout(() => addInputRef.current?.focus(), 50);
+                // keyboardOpenRef will be set to true in handleFocus
             }
         }
 
@@ -223,7 +237,6 @@ export default function ManageModules() {
             <p className="text-slate-400 text-sm mb-1 text-center">
                 {t('tbModules.pageDesc')}
             </p>
-            {/* Green button hint */}
             <p className="text-slate-600 text-xs mb-3 text-center">
                 🟢 {t('tbModules.greenHint')}
             </p>
@@ -248,6 +261,7 @@ export default function ManageModules() {
                     onAdd={addModule}
                     inputRef={addInputRef}
                     onSubmitRef={addSubmitRef}
+                    keyboardOpenRef={keyboardOpenRef}
                 />
             </div>
 
