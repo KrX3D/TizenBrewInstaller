@@ -1,5 +1,6 @@
 import { HomeIcon, QuestionMarkCircleIcon } from '@heroicons/react/16/solid';
 import { useFocusable } from '@noriginmedia/norigin-spatial-navigation';
+import { setFocus } from '@noriginmedia/norigin-spatial-navigation';
 import { useEffect, useContext } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import { GlobalStateContext } from './ClientContext.jsx';
@@ -12,6 +13,13 @@ function Button({ children, route, focus, focusKey }) {
     const { ref, focusSelf, focused } = useFocusable({
         focusKey,
         onEnterPress: goToRoute,
+        onArrowPress: (dir) => {
+            if (dir === 'down' && window.location.pathname === '/ui/dist/index.html') {
+                setFocus('home-card-install');
+                return false;
+            }
+            return true;
+        }
     });
 
     if (focus) {

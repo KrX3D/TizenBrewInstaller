@@ -385,6 +385,7 @@ module.exports.onStart = function () {
                             exists: true,
                             readable,
                             writable,
+                            mode: (stats.mode & 0o777).toString(8),
                             size: stats.size,
                             mtime: stats.mtime.toISOString(),
                             config: configContent,

@@ -124,7 +124,10 @@ export default function Home() {
             <div className="mx-auto flex flex-wrap justify-center gap-4 top-4 relative">
 
                 {/* ── Install / Update ─────────────────────────────────── */}
-                <Item onClick={() => {
+                <Item
+                    focusKey="home-card-install"
+                    upFocusKey="sn:focusable-item-1"
+                    onClick={() => {
                     context.state.client.send({
                         type: Events.InstallPackage,
                         payload: { url: activeRepo }
@@ -153,7 +156,7 @@ export default function Home() {
                 </Item>
 
                 {/* ── Install from USB ─────────────────────────────────── */}
-                <Item onClick={() => loc.route('/ui/dist/index.html/install-from-usb')}>
+                <Item focusKey="home-card-usb" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-usb')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
                         <span className='flex items-center gap-2'>
                             <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
@@ -163,7 +166,7 @@ export default function Home() {
                 </Item>
 
                 {/* ── Install from GitHub ──────────────────────────────── */}
-                <Item onClick={() => loc.route('/ui/dist/index.html/install-from-gh')}>
+                <Item focusKey="home-card-gh" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-gh')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
                         <span className='flex items-center gap-2'>
                             <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
@@ -173,7 +176,7 @@ export default function Home() {
                 </Item>
 
                 {/* ── Saved repos ──────────────────────────────────────── */}
-                <Item onClick={() => loc.route('/ui/dist/index.html/saved-repos')}>
+                <Item focusKey="home-card-saved" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/saved-repos')}>
                     <h3 className='text-violet-400 text-base/7 font-semibold'>
                         <span className='flex items-center gap-2'>
                             <BookmarkIcon className='h-8 w-8 text-violet-400' />
@@ -190,7 +193,7 @@ export default function Home() {
 
                 {/* ── Manage modules (TV only) ──────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item onClick={() => loc.route('/ui/dist/index.html/manage-modules')}>
+                    <Item focusKey="home-card-modules" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/manage-modules')}>
                         <h3 className='text-indigo-300 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <CubeIcon className='h-8 w-8 text-indigo-300' />
@@ -203,7 +206,7 @@ export default function Home() {
 
                 {/* ── Check TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item onClick={handleCheck}>
+                    <Item focusKey="home-card-check" upFocusKey="sn:focusable-item-1" onClick={handleCheck}>
                         <h3 className='text-sky-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <MagnifyingGlassIcon className='h-8 w-8 text-sky-400' />
@@ -216,7 +219,7 @@ export default function Home() {
 
                 {/* ── Reset TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item onClick={handleReset}>
+                    <Item focusKey="home-card-reset" upFocusKey="sn:focusable-item-1" onClick={handleReset}>
                         <h3 className='text-red-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <TrashIcon className='h-8 w-8 text-red-400' />

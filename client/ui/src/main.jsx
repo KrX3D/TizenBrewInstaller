@@ -19,7 +19,7 @@ window.addEventListener('keydown', (e) => {
 
         if (location.pathname !== '/ui/dist/index.html' && location.pathname !== '/ui/dist/index.html/') {
             history.back();
-            setFocus('sn:focusable-item-1');
+            setTimeout(() => setFocus('home-card-install'), 30);
         } else {
             tizen.application.getCurrentApplication().exit();
         }
