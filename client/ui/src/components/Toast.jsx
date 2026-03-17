@@ -49,7 +49,7 @@ function ToastItem({ id, variant, message, onDismiss }) {
                 opacity: visible ? 1 : 0,
                 transform: visible ? 'translateY(0)' : 'translateY(12px)',
             }}
-            className={`flex items-start gap-3 px-4 py-3 rounded-xl border shadow-2xl min-w-[22vw] max-w-[50vw] ${STYLES[variant]}`}
+            className={`flex items-start gap-3 px-4 py-3 rounded-xl border shadow-2xl w-full max-w-[92vw] ${STYLES[variant]}`}
         >
             <span className={`mt-0.5 flex-shrink-0 ${ICON_STYLES[variant]}`}>{ICONS[variant]}</span>
             <span className="text-xl leading-snug flex-1 whitespace-pre-wrap break-words">{message}</span>
@@ -66,7 +66,7 @@ function ToastItem({ id, variant, message, onDismiss }) {
 
 export function ToastContainer({ toasts, onDismiss }) {
     return (
-        <div style={{ position: 'fixed', bottom: '4vh', right: '3vw', zIndex: 9999 }} className="flex flex-col gap-3 items-end">
+        <div style={{ position: 'fixed', bottom: '4vh', left: '3vw', right: '3vw', zIndex: 9999 }} className="flex flex-col gap-3 items-center">
             {toasts.map(t => (
                 <ToastItem key={t.id} id={t.id} variant={t.variant} message={t.message} onDismiss={onDismiss} />
             ))}

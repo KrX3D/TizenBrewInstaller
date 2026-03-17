@@ -93,14 +93,27 @@ class Client {
                     payload.readable ? i18next.t('tizenBrewConfig.readable') : null,
                     payload.writable ? i18next.t('tizenBrewConfig.writable') : null,
                 ].filter(Boolean).join(', ') || i18next.t('tizenBrewConfig.noPermissions');
+                const modeStr = payload.mode ? ` (0${payload.mode})` : '';
 
                 // Build the toast message — header info + full pretty-printed JSON
-                let msg = i18next.t('tizenBrewConfig.fileInfo', { sizeKb, mtime, permStr });
+                let msg = i18next.t('tizenBrewConfig.fileInfo', { sizeKb, mtime, permStr: `${permStr}${modeStr}` });
 
                 if (payload.parseError) {
                     msg += '\n\n⚠️ ' + payload.parseError;
                 } else if (payload.config !== null && payload.config !== undefined) {
                     msg += '\n\n' + JSON.stringify(payload.config, null, 2);
+                }
+
+                if (payload.attemptedPermissionFix) {
+                    if (payload.permissionFixApplied) {
+                        if (payload.modeBefore === payload.mode) {
+                            msg += `\n\nPermissions fix attempt: already at 0${payload.mode} (no mode change needed)`;
+                        } else {
+                            msg += `\n\nPermissions fix attempt: applied (0${payload.modeBefore} → 0${payload.mode})`;
+                        }
+                    } else {
+                        msg += '\n\nPermissions fix attempt: failed (likely owner/app sandbox restriction).';
+                    }
                 }
 
                 toast.info(msg, 12000);
