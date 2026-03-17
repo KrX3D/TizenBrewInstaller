@@ -94,7 +94,9 @@ export default function Home() {
         const now = Date.now();
         if (now - lastCheckTs.current < 1000) return;
         lastCheckTs.current = now;
+
         context.state.client.send({ type: Events.CheckTizenBrewConfig });
+        context.state.client.send({ type: Events.CheckConfigurationAccess });
     }
 
     function handleReset() {
