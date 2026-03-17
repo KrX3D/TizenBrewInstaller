@@ -8,7 +8,14 @@ module.exports.onStart = function () {
     const fetch = require('node-fetch');
     const https = require('https');
     const adbhost = require('adbhost');
-    const { readConfig, writeConfig } = require('./utils/configuration.js');
+    const {
+    readConfig,
+    writeConfig,
+    deleteConfig,
+    canActuallyWriteConfig,
+    canActuallyDeleteConfig,
+    tryFixConfigPermissions
+} = require('./utils/configuration.js');
     const { fetchLatestRelease } = require('./utils/GitHubAPI.js')
     const { createSamsungCertificate, resignPackage } = require('./utils/SamsungCertificateCreation.js');
     const { writeFileSync, readFileSync, readdirSync, statSync, mkdirSync, existsSync, accessSync, constants, unlinkSync, chmodSync } = require('fs');
@@ -339,12 +346,35 @@ module.exports.onStart = function () {
                     break;
                 }
                 case Events.DeleteConfiguration: {
-                    const config = readConfig();
-                    config.authorCert = null;
-                    config.distributorCert = null;
-                    config.password = null;
-                    writeConfig(config);
-                    wsConn.send(wsConn.Event(Events.DeleteConfiguration, null));
+                    let result = deleteConfig();
+
+                    if (!result.success) {
+                        // Try a normal Unix permission fix first
+                        const fixResult = tryFixConfigPermissions();
+
+                        if (fixResult.success) {
+                            result = deleteConfig();
+                        }
+                    }
+
+                    wsConn.send(wsConn.Event(Events.DeleteConfiguration, result));
+                    break;
+                }
+                case Events.CheckConfigurationAccess: {
+                    const writeOk = canActuallyWriteConfig();
+                    const deleteOk = canActuallyDeleteConfig();
+
+                    let fixAttempt = null;
+                    if (!writeOk) {
+                        fixAttempt = tryFixConfigPermissions();
+                    }
+
+                    wsConn.send(wsConn.Event(Events.CheckConfigurationAccess, {
+                        exists: existsSync(`${homedir()}/share/tizenbrewInstallerConfig.json`),
+                        canWrite: canActuallyWriteConfig(),
+                        canDelete: canActuallyDeleteConfig(),
+                        fixAttempt
+                    }));
                     break;
                 }
                 case Events.ConnectToTV: {

@@ -12,6 +12,7 @@ const Events = {
     GetTBModules:           9,
     AddTBModule:            10,
     RemoveTBModule:         11,
+    CheckConfigurationAccess: 12
 };
 
 class Client {
@@ -74,6 +75,33 @@ class Client {
                         payload: { message: payload.error, disappear: false }
                     });
                 }
+                break;
+            }
+            case Events.CheckConfigurationAccess: {
+                if (!toast) break;
+
+                if (!payload.exists) {
+                    toast.info('Configuration file not found.');
+                    break;
+                }
+
+                let msg =
+                    `Config access check:\n` +
+                    `Write: ${payload.canWrite ? 'yes' : 'no'}\n` +
+                    `Delete: ${payload.canDelete ? 'yes' : 'no'}`;
+
+                if (payload.fixAttempt) {
+                    msg += `\nFix attempt: ${payload.fixAttempt.success ? 'success' : 'failed'}`;
+                    if (payload.fixAttempt.reason) {
+                        msg += `\nReason: ${payload.fixAttempt.reason}`;
+                    }
+                }
+
+                if (!payload.canWrite || !payload.canDelete) {
+                    msg += `\n\nThe file may still be blocked by owner / app sandbox restrictions.`;
+                }
+
+                toast.info(msg, 10000);
                 break;
             }
             case Events.CheckTizenBrewConfig: {
