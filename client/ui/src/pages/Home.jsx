@@ -8,11 +8,21 @@ import { useLocation } from 'preact-iso';
 import { Events } from '../components/WebSocketClient.js';
 import { useEffect } from 'preact/hooks';
 
-// ── Known repo → Tizen app-ID mapping (case-insensitive lookup below) ─────────
-const REPO_TO_PACKAGE_ID = {
-    'reisxd/tizenbrew':          'xvvl3S1bvH.TizenBrewStandalone',
-    'reisxd/tizenbrewinstaller': 'xvvl3S1bTI.TizenBrewStandalone',
+const REPO_NAME_TO_PACKAGE_ID = {
+    tizenbrew: 'xvvl3S1bvH.TizenBrewStandalone',
+    tizenbrewinstaller: 'xvvl3S1bTI.TizenBrewStandalone',
 };
+
+function normalizeRepo(repo) {
+    if (!repo) return '';
+    return repo
+        .trim()
+        .replace(/^https?:\/\/github\.com\//i, '')
+        .replace(/\.git$/i, '')
+        .replace(/^github:/i, '')
+        .replace(/^\/+|\/+$/g, '')
+        .toLowerCase();
+}
 
 function repoLabel(repo) {
     if (!repo) return 'TizenBrew';
@@ -23,8 +33,9 @@ function repoLabel(repo) {
 
 function getInstalledInfo(repo) {
     if (typeof tizen === 'undefined') return { installed: false, version: null };
-    // Case-insensitive lookup so "reisxd/TizenBrew" and "reisxd/tizenbrew" both match
-    const pkgId = REPO_TO_PACKAGE_ID[repo.toLowerCase()];
+    const normalizedRepo = normalizeRepo(repo);
+    const repoName = normalizedRepo.split('/').pop();
+    const pkgId = REPO_NAME_TO_PACKAGE_ID[repoName];
     if (!pkgId) return { installed: false, version: null };
     try {
         const appInfo = tizen.application.getAppInfo(pkgId);
@@ -36,7 +47,8 @@ function getInstalledInfo(repo) {
 
 // Returns true if the repo is a "known" one we have a package ID for
 function isKnownRepo(repo) {
-    return !!REPO_TO_PACKAGE_ID[repo.toLowerCase()];
+    const repoName = normalizeRepo(repo).split('/').pop();
+    return !!REPO_NAME_TO_PACKAGE_ID[repoName];
 }
 
 export default function Home() {
