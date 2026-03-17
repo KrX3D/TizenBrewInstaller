@@ -55,6 +55,7 @@ function AddRow({ onAdd }) {
     const [value, setValue] = useState(exampleModule);
     const inputRef   = useRef(null);
     const confirmedRef = useRef(false);
+    const lastSubmitAtRef = useRef(0);
     const { t } = useTranslation();
 
     const { ref: wrapRef, focused } = useFocusable({
@@ -91,8 +92,7 @@ function AddRow({ onAdd }) {
 
     function handleBlur() {
         if (confirmedRef.current) {
-            confirmedRef.current = false;
-            submit();
+            submitConfirmed();
         }
     }
 
