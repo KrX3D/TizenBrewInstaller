@@ -93,9 +93,10 @@ class Client {
                     payload.readable ? i18next.t('tizenBrewConfig.readable') : null,
                     payload.writable ? i18next.t('tizenBrewConfig.writable') : null,
                 ].filter(Boolean).join(', ') || i18next.t('tizenBrewConfig.noPermissions');
+                const modeStr = payload.mode ? ` (0${payload.mode})` : '';
 
                 // Build the toast message — header info + full pretty-printed JSON
-                let msg = i18next.t('tizenBrewConfig.fileInfo', { sizeKb, mtime, permStr });
+                let msg = i18next.t('tizenBrewConfig.fileInfo', { sizeKb, mtime, permStr: `${permStr}${modeStr}` });
 
                 if (payload.parseError) {
                     msg += '\n\n⚠️ ' + payload.parseError;
