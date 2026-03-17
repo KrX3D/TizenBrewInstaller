@@ -7,25 +7,10 @@ import { init, setFocus } from '@noriginmedia/norigin-spatial-navigation';
 init({ });
 let lastBackAt = 0;
 
-function restoreHomeFocus() {
-    // Retry a few times because route transitions/layout can lag on some TVs.
-    [40, 120, 260].forEach(delay => setTimeout(() => setFocus('home-card-install'), delay));
-}
-
 window.addEventListener('popstate', () => {
     if (window.location.pathname === '/ui/dist/index.html' || window.location.pathname === '/ui/dist/index.html/') {
-        restoreHomeFocus();
-    }
-});
-
-function restoreHomeFocus() {
-    // Retry a few times because route transitions/layout can lag on some TVs.
-    [40, 120, 260].forEach(delay => setTimeout(() => setFocus('home-card-install'), delay));
-}
-
-window.addEventListener('popstate', () => {
-    if (window.location.pathname === '/ui/dist/index.html' || window.location.pathname === '/ui/dist/index.html/') {
-        restoreHomeFocus();
+        // Retry a few times because route transitions/layout can lag on some TVs.
+        [40, 120, 260].forEach(delay => setTimeout(() => setFocus('home-card-install'), delay));
     }
 });
 
