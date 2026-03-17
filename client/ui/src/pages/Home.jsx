@@ -8,11 +8,21 @@ import { useLocation } from 'preact-iso';
 import { Events } from '../components/WebSocketClient.js';
 import { useEffect } from 'preact/hooks';
 
-// ── Known repo → Tizen app-ID mapping (case-insensitive lookup below) ─────────
-const REPO_TO_PACKAGE_ID = {
-    'reisxd/tizenbrew':          'xvvl3S1bvH.TizenBrewStandalone',
-    'reisxd/tizenbrewinstaller': 'xvvl3S1bTI.TizenBrewStandalone',
+const REPO_NAME_TO_PACKAGE_ID = {
+    tizenbrew: 'xvvl3S1bvH.TizenBrewStandalone',
+    tizenbrewinstaller: 'xvvl3S1bTI.TizenBrewStandalone',
 };
+
+function normalizeRepo(repo) {
+    if (!repo) return '';
+    return repo
+        .trim()
+        .replace(/^https?:\/\/github\.com\//i, '')
+        .replace(/\.git$/i, '')
+        .replace(/^github:/i, '')
+        .replace(/^\/+|\/+$/g, '')
+        .toLowerCase();
+}
 
 function repoLabel(repo) {
     if (!repo) return 'TizenBrew';
@@ -23,8 +33,9 @@ function repoLabel(repo) {
 
 function getInstalledInfo(repo) {
     if (typeof tizen === 'undefined') return { installed: false, version: null };
-    // Case-insensitive lookup so "reisxd/TizenBrew" and "reisxd/tizenbrew" both match
-    const pkgId = REPO_TO_PACKAGE_ID[repo.toLowerCase()];
+    const normalizedRepo = normalizeRepo(repo);
+    const repoName = normalizedRepo.split('/').pop();
+    const pkgId = REPO_NAME_TO_PACKAGE_ID[repoName];
     if (!pkgId) return { installed: false, version: null };
     try {
         const appInfo = tizen.application.getAppInfo(pkgId);
@@ -36,7 +47,8 @@ function getInstalledInfo(repo) {
 
 // Returns true if the repo is a "known" one we have a package ID for
 function isKnownRepo(repo) {
-    return !!REPO_TO_PACKAGE_ID[repo.toLowerCase()];
+    const repoName = normalizeRepo(repo).split('/').pop();
+    return !!REPO_NAME_TO_PACKAGE_ID[repoName];
 }
 
 export default function Home() {
@@ -112,7 +124,10 @@ export default function Home() {
             <div className="mx-auto flex flex-wrap justify-center gap-4 top-4 relative">
 
                 {/* ── Install / Update ─────────────────────────────────── */}
-                <Item onClick={() => {
+                <Item
+                    focusKey="home-card-install"
+                    upFocusKey="sn:focusable-item-1"
+                    onClick={() => {
                     context.state.client.send({
                         type: Events.InstallPackage,
                         payload: { url: activeRepo }
@@ -141,7 +156,7 @@ export default function Home() {
                 </Item>
 
                 {/* ── Install from USB ─────────────────────────────────── */}
-                <Item onClick={() => loc.route('/ui/dist/index.html/install-from-usb')}>
+                <Item focusKey="home-card-usb" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-usb')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
                         <span className='flex items-center gap-2'>
                             <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
@@ -151,7 +166,7 @@ export default function Home() {
                 </Item>
 
                 {/* ── Install from GitHub ──────────────────────────────── */}
-                <Item onClick={() => loc.route('/ui/dist/index.html/install-from-gh')}>
+                <Item focusKey="home-card-gh" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-gh')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
                         <span className='flex items-center gap-2'>
                             <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
@@ -161,7 +176,7 @@ export default function Home() {
                 </Item>
 
                 {/* ── Saved repos ──────────────────────────────────────── */}
-                <Item onClick={() => loc.route('/ui/dist/index.html/saved-repos')}>
+                <Item focusKey="home-card-saved" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/saved-repos')}>
                     <h3 className='text-violet-400 text-base/7 font-semibold'>
                         <span className='flex items-center gap-2'>
                             <BookmarkIcon className='h-8 w-8 text-violet-400' />
@@ -178,7 +193,7 @@ export default function Home() {
 
                 {/* ── Manage modules (TV only) ──────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item onClick={() => loc.route('/ui/dist/index.html/manage-modules')}>
+                    <Item focusKey="home-card-modules" onClick={() => loc.route('/ui/dist/index.html/manage-modules')}>
                         <h3 className='text-indigo-300 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <CubeIcon className='h-8 w-8 text-indigo-300' />
@@ -191,7 +206,7 @@ export default function Home() {
 
                 {/* ── Check TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item onClick={handleCheck}>
+                    <Item focusKey="home-card-check" onClick={handleCheck}>
                         <h3 className='text-sky-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <MagnifyingGlassIcon className='h-8 w-8 text-sky-400' />
@@ -204,7 +219,7 @@ export default function Home() {
 
                 {/* ── Reset TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item onClick={handleReset}>
+                    <Item focusKey="home-card-reset" onClick={handleReset}>
                         <h3 className='text-red-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <TrashIcon className='h-8 w-8 text-red-400' />
