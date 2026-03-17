@@ -9,14 +9,13 @@ import { Events } from '../components/WebSocketClient.js';
 import { useEffect } from 'preact/hooks';
 
 const REPO_NAME_TO_PACKAGE_ID = {
-    tizenbrew: 'xvvl3S1bvH.TizenBrewStandalone',
+    tizenbrew:          'xvvl3S1bvH.TizenBrewStandalone',
     tizenbrewinstaller: 'xvvl3S1bTI.TizenBrewStandalone',
 };
 
 function normalizeRepo(repo) {
     if (!repo) return '';
-    return repo
-        .trim()
+    return repo.trim()
         .replace(/^https?:\/\/github\.com\//i, '')
         .replace(/\.git$/i, '')
         .replace(/^github:/i, '')
@@ -33,8 +32,7 @@ function repoLabel(repo) {
 
 function getInstalledInfo(repo) {
     if (typeof tizen === 'undefined') return { installed: false, version: null };
-    const normalizedRepo = normalizeRepo(repo);
-    const repoName = normalizedRepo.split('/').pop();
+    const repoName = normalizeRepo(repo).split('/').pop();
     const pkgId = REPO_NAME_TO_PACKAGE_ID[repoName];
     if (!pkgId) return { installed: false, version: null };
     try {
@@ -45,10 +43,8 @@ function getInstalledInfo(repo) {
     }
 }
 
-// Returns true if the repo is a "known" one we have a package ID for
 function isKnownRepo(repo) {
-    const repoName = normalizeRepo(repo).split('/').pop();
-    return !!REPO_NAME_TO_PACKAGE_ID[repoName];
+    return !!REPO_NAME_TO_PACKAGE_ID[normalizeRepo(repo).split('/').pop()];
 }
 
 export default function Home() {
@@ -56,11 +52,9 @@ export default function Home() {
     const context = useContext(GlobalStateContext);
     const { t } = useTranslation();
     const loc = useLocation();
-    const didRunRef = useRef(false);
-
-    // ── Debounce refs for check / reset config buttons (1 s cooldown) ──────────
-    const lastCheckTs  = useRef(0);
-    const lastResetTs  = useRef(0);
+    const didRunRef   = useRef(false);
+    const lastCheckTs = useRef(0);
+    const lastResetTs = useRef(0);
 
     if (!isTizenApiAvailable) loc.route('/ui/dist/index.html/desktop');
 
@@ -76,7 +70,6 @@ export default function Home() {
         const { client } = context.state;
         if (client !== null && client.socket && client.socket.readyState === WebSocket.OPEN && !didRunRef.current) {
             didRunRef.current = true;
-
             if (ownPkgId === 'xvvl3S1bTU') {
                 alert(t('installer.installingAgain'));
                 client.send({ type: Events.InstallPackage, payload: { url: 'reisxd/TizenBrewInstaller' } });
@@ -86,7 +79,7 @@ export default function Home() {
                     tizen.application.getAppInfo('xvvl3S1bTU.TizenBrewStandalone');
                     alert(t('installer.alreadyInstalled'));
                 }
-            } catch (_) { }
+            } catch (_) {}
         }
     }, [context.state.client]);
 
@@ -94,9 +87,9 @@ export default function Home() {
         const now = Date.now();
         if (now - lastCheckTs.current < 1000) return;
         lastCheckTs.current = now;
-
+        // Only send CheckTizenBrewConfig — CheckConfigurationAccess is about the
+        // installer cert file and its "not found" toast confuses the user here.
         context.state.client.send({ type: Events.CheckTizenBrewConfig });
-        context.state.client.send({ type: Events.CheckConfigurationAccess });
     }
 
     function handleReset() {
@@ -113,11 +106,7 @@ export default function Home() {
                     <div className="p-8 rounded-2xl shadow-2xl max-w-full">
                         <h3 className="text-3xl font-bold mb-4">{t('resigning.resigningRequired')}</h3>
                         <p className="text-xl mb-4 whitespace-pre">{t('resigning.resigningRequiredDesc')}</p>
-                        <img
-                            src={SignInQrCode}
-                            alt="Sign In QR Code"
-                            className="mt-2 w-80 h-80 max-w-full max-h-[60vw] object-contain mx-auto border-8 rounded-lg"
-                        />
+                        <img src={SignInQrCode} alt="Sign In QR Code" className="mt-2 w-80 h-80 max-w-full max-h-[60vw] object-contain mx-auto border-8 rounded-lg" />
                         <p className="mt-4 text-lg">{t('resigning.resigningRequiredAccessInfo', { ip: webapis.network.getIp() })}</p>
                         <p className="mt-4 text-lg">{t('resigning.resigningDeviceSameNetwork')}</p>
                     </div>
@@ -125,108 +114,63 @@ export default function Home() {
             )}
             <div className="mx-auto flex flex-wrap justify-center gap-4 top-4 relative">
 
-                {/* ── Install / Update ─────────────────────────────────── */}
-                <Item
-                    focusKey="home-card-install"
-                    upFocusKey="sn:focusable-item-1"
-                    onClick={() => {
-                    context.state.client.send({
-                        type: Events.InstallPackage,
-                        payload: { url: activeRepo }
-                    });
+                <Item focusKey="home-card-install" upFocusKey="sn:focusable-item-1" onClick={() => {
+                    context.state.client.send({ type: Events.InstallPackage, payload: { url: activeRepo } });
                 }}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
                         {installed ? (
-                            <span className='flex items-center gap-2'>
-                                <ArrowPathIcon className='h-8 w-8 text-indigo-400' />
-                                {t('installer.update', { label })}
-                            </span>
+                            <span className='flex items-center gap-2'><ArrowPathIcon className='h-8 w-8 text-indigo-400' />{t('installer.update', { label })}</span>
                         ) : (
-                            <span className='flex items-center gap-2'>
-                                <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
-                                {t('installer.install', { label })}
-                            </span>
+                            <span className='flex items-center gap-2'><ArrowDownIcon className='h-8 w-8 text-indigo-400' />{t('installer.install', { label })}</span>
                         )}
                     </h3>
                     <p className="mt-2 text-sm text-slate-300 break-all">Repo: {activeRepo}</p>
-                    {installed && version && (
-                        <p className="text-sm text-slate-300">{t('installer.installedVersion', { version })}</p>
-                    )}
-                    {!isKnownRepo(activeRepo) && (
-                        <p className="text-xs text-slate-500 mt-1">{t('installer.versionUnknown')}</p>
-                    )}
+                    {installed && version && <p className="text-sm text-slate-300">{t('installer.installedVersion', { version })}</p>}
+                    {!isKnownRepo(activeRepo) && <p className="text-xs text-slate-500 mt-1">{t('installer.versionUnknown')}</p>}
                 </Item>
 
-                {/* ── Install from USB ─────────────────────────────────── */}
                 <Item focusKey="home-card-usb" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-usb')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
-                        <span className='flex items-center gap-2'>
-                            <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
-                            {t('installer.installFromUSB')}
-                        </span>
+                        <span className='flex items-center gap-2'><ArrowDownIcon className='h-8 w-8 text-indigo-400' />{t('installer.installFromUSB')}</span>
                     </h3>
                 </Item>
 
-                {/* ── Install from GitHub ──────────────────────────────── */}
                 <Item focusKey="home-card-gh" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-gh')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
-                        <span className='flex items-center gap-2'>
-                            <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
-                            {t('installer.installFromGH')}
-                        </span>
+                        <span className='flex items-center gap-2'><ArrowDownIcon className='h-8 w-8 text-indigo-400' />{t('installer.installFromGH')}</span>
                     </h3>
                 </Item>
 
-                {/* ── Saved repos ──────────────────────────────────────── */}
                 <Item focusKey="home-card-saved" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/saved-repos')}>
                     <h3 className='text-violet-400 text-base/7 font-semibold'>
-                        <span className='flex items-center gap-2'>
-                            <BookmarkIcon className='h-8 w-8 text-violet-400' />
-                            {t('savedRepos.button')}
-                        </span>
+                        <span className='flex items-center gap-2'><BookmarkIcon className='h-8 w-8 text-violet-400' />{t('savedRepos.button')}</span>
                     </h3>
-                    <p className="mt-2 text-sm text-slate-400">
-                        {t('savedRepos.desc', { count: context.state.sharedData.repoList.length })}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500 break-all">
-                        {t('savedRepos.active')}: {activeRepo}
-                    </p>
+                    <p className="mt-2 text-sm text-slate-400">{t('savedRepos.desc', { count: context.state.sharedData.repoList.length })}</p>
+                    <p className="mt-1 text-xs text-slate-500 break-all">{t('savedRepos.active')}: {activeRepo}</p>
                 </Item>
 
-                {/* ── Manage modules (TV only) ──────────────────────────── */}
                 {isTizenApiAvailable && (
                     <Item focusKey="home-card-modules" onClick={() => loc.route('/ui/dist/index.html/manage-modules')}>
                         <h3 className='text-indigo-300 text-base/7 font-semibold'>
-                            <span className='flex items-center gap-2'>
-                                <CubeIcon className='h-8 w-8 text-indigo-300' />
-                                {t('tbModules.homeButton')}
-                            </span>
+                            <span className='flex items-center gap-2'><CubeIcon className='h-8 w-8 text-indigo-300' />{t('tbModules.homeButton')}</span>
                         </h3>
                         <p className="mt-2 text-sm text-slate-400">{t('tbModules.homeDesc')}</p>
                     </Item>
                 )}
 
-                {/* ── Check TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
                     <Item focusKey="home-card-check" onClick={handleCheck}>
                         <h3 className='text-sky-400 text-base/7 font-semibold'>
-                            <span className='flex items-center gap-2'>
-                                <MagnifyingGlassIcon className='h-8 w-8 text-sky-400' />
-                                {t('tizenBrewConfig.checkButton')}
-                            </span>
+                            <span className='flex items-center gap-2'><MagnifyingGlassIcon className='h-8 w-8 text-sky-400' />{t('tizenBrewConfig.checkButton')}</span>
                         </h3>
                         <p className="mt-2 text-sm text-slate-400">{t('tizenBrewConfig.checkDesc')}</p>
                     </Item>
                 )}
 
-                {/* ── Reset TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
                     <Item focusKey="home-card-reset" onClick={handleReset}>
                         <h3 className='text-red-400 text-base/7 font-semibold'>
-                            <span className='flex items-center gap-2'>
-                                <TrashIcon className='h-8 w-8 text-red-400' />
-                                {t('tizenBrewConfig.resetButton')}
-                            </span>
+                            <span className='flex items-center gap-2'><TrashIcon className='h-8 w-8 text-red-400' />{t('tizenBrewConfig.resetButton')}</span>
                         </h3>
                         <p className="mt-2 text-sm text-slate-400">{t('tizenBrewConfig.resetDesc')}</p>
                     </Item>
