@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState, useRef } from 'preact/hooks';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import { useFocusable, setFocus } from '@noriginmedia/norigin-spatial-navigation';
-import { TrashIcon, CubeIcon } from '@heroicons/react/16/solid';
+import { TrashIcon, CubeIcon, PlusIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
 import { Events } from '../components/WebSocketClient.js';
 
@@ -25,7 +25,7 @@ function ModuleRow({ mod, focusKey, onRemove }) {
             ref={ref}
             className={[
                 'flex items-center gap-3 rounded-xl px-3 border-2 transition-colors h-16',
-                focused ? 'border-indigo-400 bg-slate-800' : 'border-slate-700 bg-slate-900'
+                focused ? 'border-red-500 bg-slate-800' : 'border-slate-700 bg-slate-900'
             ].join(' ')}
         >
             <CubeIcon className="h-5 w-5 text-indigo-400 flex-shrink-0" />
@@ -83,7 +83,6 @@ function AddRow({ onAdd }) {
         }
         // OK (13) or Samsung "Fertig" (65376) — confirm input
         if (e.keyCode === 13 || e.keyCode === 65376) {
-            // "Fertig" / Enter closes keyboard and adds current module text.
             confirmedRef.current = true;
             inputRef.current?.blur();
         }
@@ -133,7 +132,29 @@ function AddRow({ onAdd }) {
                 </p>
             )}
 
-            <p className="text-slate-500 text-xs">{t('tbModules.addButton')} = Enter / Fertig</p>
+            {/* Add button */}
+            <AddButton onSubmit={submit} label={t('tbModules.addButton')} />
+        </div>
+    );
+}
+
+function AddButton({ onSubmit, label }) {
+    const { ref, focused } = useFocusable({
+        focusKey: 'add-module-btn',
+        onEnterPress: onSubmit,
+    });
+    return (
+        <div
+            ref={ref}
+            onClick={onSubmit}
+            className={[
+                'flex items-center justify-center gap-2 px-4 py-2 rounded-lg',
+                'bg-indigo-600 text-white font-semibold text-sm cursor-pointer',
+                focused ? 'ring-2 ring-white' : ''
+            ].join(' ')}
+        >
+            <PlusIcon className="h-5 w-5" />
+            {label}
         </div>
     );
 }

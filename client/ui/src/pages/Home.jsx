@@ -193,7 +193,7 @@ export default function Home() {
 
                 {/* ── Manage modules (TV only) ──────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item focusKey="home-card-modules" onClick={() => loc.route('/ui/dist/index.html/manage-modules')}>
+                    <Item focusKey="home-card-modules" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/manage-modules')}>
                         <h3 className='text-indigo-300 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <CubeIcon className='h-8 w-8 text-indigo-300' />
@@ -206,7 +206,7 @@ export default function Home() {
 
                 {/* ── Check TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item focusKey="home-card-check" onClick={handleCheck}>
+                    <Item focusKey="home-card-check" upFocusKey="sn:focusable-item-1" onClick={handleCheck}>
                         <h3 className='text-sky-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <MagnifyingGlassIcon className='h-8 w-8 text-sky-400' />
@@ -219,7 +219,7 @@ export default function Home() {
 
                 {/* ── Reset TB config (TV only) ─────────────────────────── */}
                 {isTizenApiAvailable && (
-                    <Item focusKey="home-card-reset" onClick={handleReset}>
+                    <Item focusKey="home-card-reset" upFocusKey="sn:focusable-item-1" onClick={handleReset}>
                         <h3 className='text-red-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'>
                                 <TrashIcon className='h-8 w-8 text-red-400' />
