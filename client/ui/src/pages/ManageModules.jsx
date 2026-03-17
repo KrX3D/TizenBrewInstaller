@@ -25,7 +25,7 @@ function ModuleRow({ mod, focusKey, onRemove }) {
             ref={ref}
             className={[
                 'flex items-center gap-3 rounded-xl px-3 border-2 transition-colors h-16',
-                focused ? 'border-red-500 bg-slate-800' : 'border-slate-700 bg-slate-900'
+                focused ? 'border-indigo-400 bg-slate-800' : 'border-slate-700 bg-slate-900'
             ].join(' ')}
         >
             <CubeIcon className="h-5 w-5 text-indigo-400 flex-shrink-0" />
@@ -55,6 +55,7 @@ function AddRow({ onAdd }) {
     const [value, setValue] = useState(exampleModule);
     const inputRef   = useRef(null);
     const confirmedRef = useRef(false);
+    const lastSubmitAtRef = useRef(0);
     const { t } = useTranslation();
 
     const { ref: wrapRef, focused } = useFocusable({

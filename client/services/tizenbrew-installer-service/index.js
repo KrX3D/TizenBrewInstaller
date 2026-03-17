@@ -141,6 +141,15 @@ module.exports.onStart = function () {
         chmodSync(TB_CONFIG, 0o666);
     }
 
+    function tryFixTBConfigPermissions(filePath) {
+        try {
+            chmodSync(filePath, 0o666);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
     wsServer.on('connection', (ws) => {
         const wsConn = new Connection(ws);
         wsClient = wsConn;
@@ -365,10 +374,22 @@ module.exports.onStart = function () {
                         return wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, { exists: false }));
                     }
                     try {
-                        const stats = statSync(TB_CONFIG);
+                        let stats = statSync(TB_CONFIG);
+                        const modeBefore = (stats.mode & 0o777).toString(8);
                         let readable = false, writable = false;
                         try { accessSync(TB_CONFIG, constants.R_OK); readable = true; } catch (_) {}
                         try { accessSync(TB_CONFIG, constants.W_OK); writable = true; } catch (_) {}
+
+                        let attemptedPermissionFix = false;
+                        let permissionFixApplied = false;
+                        if (!readable || !writable) {
+                            attemptedPermissionFix = true;
+                            permissionFixApplied = tryFixTBConfigPermissions(TB_CONFIG);
+                            stats = statSync(TB_CONFIG);
+                            readable = false; writable = false;
+                            try { accessSync(TB_CONFIG, constants.R_OK); readable = true; } catch (_) {}
+                            try { accessSync(TB_CONFIG, constants.W_OK); writable = true; } catch (_) {}
+                        }
                 
                         // Also read the actual content so the UI can show the full config
                         let configContent = null;
@@ -385,6 +406,9 @@ module.exports.onStart = function () {
                             exists: true,
                             readable,
                             writable,
+                            attemptedPermissionFix,
+                            permissionFixApplied,
+                            modeBefore,
                             mode: (stats.mode & 0o777).toString(8),
                             size: stats.size,
                             mtime: stats.mtime.toISOString(),
@@ -439,6 +463,8 @@ module.exports.onStart = function () {
                 
                     let config;
                     if (existsSync(TB_CONFIG)) {
+                        // Attempt to normalize permissions if another app created this file as 0644.
+                        tryFixTBConfigPermissions(TB_CONFIG);
                         try {
                             config = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
                             if (!Array.isArray(config.modules)) config.modules = [];
@@ -475,6 +501,7 @@ module.exports.onStart = function () {
                     if (!existsSync(TB_CONFIG)) {
                         return wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'notFound' }));
                     }
+                    tryFixTBConfigPermissions(TB_CONFIG);
                     let config;
                     try {
                         config = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
