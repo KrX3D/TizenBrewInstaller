@@ -51,7 +51,8 @@ function ModuleRow({ mod, focusKey, onRemove }) {
 // real <input> receives .focus() which opens the TV virtual keyboard.
 // Pressing OK / Fertig inside the keyboard confirms and calls submit().
 function AddRow({ onAdd }) {
-    const [value, setValue] = useState('');
+    const exampleModule = 'npm/@foxreis/tizentube';
+    const [value, setValue] = useState(exampleModule);
     const inputRef   = useRef(null);
     const confirmedRef = useRef(false);
     const { t } = useTranslation();
@@ -72,8 +73,14 @@ function AddRow({ onAdd }) {
     }
 
     function handleKeyDown(e) {
-        // Arrow keys — stop spatial nav stealing cursor movement
-        if (e.keyCode >= 37 && e.keyCode <= 40) e.stopPropagation();
+        // Left/Right — stop spatial nav stealing cursor movement while editing text.
+        if (e.keyCode === 37 || e.keyCode === 39) e.stopPropagation();
+
+        // Up/Down — leave input editing and let spatial nav move to next control.
+        if (e.keyCode === 38 || e.keyCode === 40) {
+            inputRef.current?.blur();
+            return;
+        }
         // OK (13) or Samsung "Fertig" (65376) — confirm input
         if (e.keyCode === 13 || e.keyCode === 65376) {
             confirmedRef.current = true;
@@ -106,11 +113,15 @@ function AddRow({ onAdd }) {
                     ref={inputRef}
                     type="text"
                     value={value}
-                    placeholder={t('tbModules.inputPlaceholder')}
+                    placeholder={`${t('tbModules.inputPlaceholder')} (e.g. ${exampleModule})`}
                     className="flex-1 bg-transparent text-slate-100 text-sm font-mono outline-none"
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onBlur={handleBlur}
+                    onFocus={e => {
+                        // Make it easy to replace the prefilled example on TV keyboards.
+                        e.target.select();
+                    }}
                 />
             </div>
 

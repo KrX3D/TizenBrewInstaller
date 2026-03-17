@@ -1,12 +1,22 @@
-import { useFocusable } from '@noriginmedia/norigin-spatial-navigation'
+import { useFocusable, setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect } from 'react';
 
 function classNames(...classes) {
     return classes.filter(Boolean).join(' ')
 }
 
-export default function Item({ children, onClick }) {
-  const { ref, focused } = useFocusable();
+export default function Item({ children, onClick, focusKey, upFocusKey }) {
+  const { ref, focused } = useFocusable({
+    focusKey,
+    onEnterPress: () => onClick?.(),
+    onArrowPress: (dir) => {
+      if (dir === 'up' && upFocusKey) {
+        setFocus(upFocusKey);
+        return false;
+      }
+      return true;
+    },
+  });
   useEffect(() => {
     if (focused) {
       ref.current.scrollIntoView({

@@ -6,11 +6,12 @@ module.exports.onStart = function () {
     console.log('Service started');
     const express = require('express');
     const fetch = require('node-fetch');
+    const https = require('https');
     const adbhost = require('adbhost');
     const { readConfig, writeConfig } = require('./utils/configuration.js');
     const { fetchLatestRelease } = require('./utils/GitHubAPI.js')
     const { createSamsungCertificate, resignPackage } = require('./utils/SamsungCertificateCreation.js');
-    const { writeFileSync, readFileSync, readdirSync, statSync, mkdirSync, existsSync, accessSync, constants, unlinkSync } = require('fs');
+    const { writeFileSync, readFileSync, readdirSync, statSync, mkdirSync, existsSync, accessSync, constants, unlinkSync, chmodSync } = require('fs');
     const { setValue } = require('./utils/Buxton2.js');
     const { join, dirname } = require('path');
     const { parsePackage, installPackage } = require('./utils/PackageInstallation.js');
@@ -114,11 +115,31 @@ module.exports.onStart = function () {
         mkdirSync(targetDir);
     }
 
+    function fetchWithCertFallback(url, options) {
+        return fetch(url, options).catch(err => {
+            const msg = String(err && err.message || err);
+            const certErr = /certificate|unable to get local issuer|self signed/i.test(msg);
+            if (!certErr) throw err;
+            console.warn('[TLS fallback] Retrying download with relaxed certificate validation for:', url);
+            return fetch(url, {
+                ...options,
+                agent: new https.Agent({ rejectUnauthorized: false })
+            });
+        });
+    }
+
     const TB_CONFIG_DEFAULT = {
         modules: [],
         autoLaunchServiceList: [],
         autoLaunchModule: ''
     };
+
+    function writeTBConfig(config) {
+        const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
+        writeFileSync(TB_CONFIG, JSON.stringify(config, null, 4), { mode: 0o666 });
+        // Ensure other apps running as different package owners can read/write it.
+        chmodSync(TB_CONFIG, 0o666);
+    }
 
     wsServer.on('connection', (ws) => {
         const wsConn = new Connection(ws);
@@ -161,6 +182,9 @@ module.exports.onStart = function () {
                                             .then(result => {
                                                 wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
                                                 wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                            })
+                                            .catch(err => {
+                                                wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
                                             });
                                     });
                                     return;
@@ -175,11 +199,16 @@ module.exports.onStart = function () {
                                 }
 
                                 if (isTizen3 && isTV) {
-                                    const result = installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId);
-                                    setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
-                                    setValue('db/sdk/develop/mode', 'int32', '1');
-                                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                    wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                    Promise.resolve(installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId))
+                                        .then(result => {
+                                            setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
+                                            setValue('db/sdk/develop/mode', 'int32', '1');
+                                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
+                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                        })
+                                        .catch(err => {
+                                            wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
+                                        });
                                 } else if (isTV) {
                                     createAdbConnection()
                                         .then(adbClient => {
@@ -191,6 +220,9 @@ module.exports.onStart = function () {
                                                         adbClient._stream.end();
                                                         adbClient._stream.destroy();
                                                     }, 5000);
+                                                })
+                                                .catch(err => {
+                                                    wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
                                                 });
                                         })
                                         .catch(err => {
@@ -210,8 +242,17 @@ module.exports.onStart = function () {
                         fetchLatestRelease(payload.url)
                             .then(release => {
                                 const asset = release.assets.find(a => a.name.endsWith('.wgt') || a.name.endsWith('.tpk'));
-                                fetch(asset.browser_download_url)
-                                    .then(res => res.buffer())
+                                if (!asset) {
+                                    throw new Error('No .wgt/.tpk asset found in latest release.');
+                                }
+
+                                fetchWithCertFallback(asset.browser_download_url)
+                                    .then(res => {
+                                        if (!res.ok) {
+                                            throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                                        }
+                                        return res.buffer();
+                                    })
                                     .then(buffer => {
                                         if (isTizen7OrHigher) {
                                             wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.resigning'));
@@ -344,6 +385,7 @@ module.exports.onStart = function () {
                             exists: true,
                             readable,
                             writable,
+                            mode: (stats.mode & 0o777).toString(8),
                             size: stats.size,
                             mtime: stats.mtime.toISOString(),
                             config: configContent,
@@ -419,7 +461,7 @@ module.exports.onStart = function () {
                 
                     config.modules.push(moduleStr);
                     try {
-                        writeFileSync(TB_CONFIG, JSON.stringify(config, null, 4));
+                        writeTBConfig(config);
                         wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'success', modules: config.modules }));
                     } catch (e) {
                         wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'error', message: e.message }));
@@ -448,7 +490,7 @@ module.exports.onStart = function () {
                     if (config.autoLaunchModule === payload.module) config.autoLaunchModule = '';
                 
                     try {
-                        writeFileSync(TB_CONFIG, JSON.stringify(config, null, 4));
+                        writeTBConfig(config);
                         wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'success', modules: config.modules }));
                     } catch (e) {
                         wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'error', message: e.message }));
