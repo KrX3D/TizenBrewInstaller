@@ -72,8 +72,14 @@ function AddRow({ onAdd }) {
     }
 
     function handleKeyDown(e) {
-        // Arrow keys — stop spatial nav stealing cursor movement
-        if (e.keyCode >= 37 && e.keyCode <= 40) e.stopPropagation();
+        // Left/Right — stop spatial nav stealing cursor movement while editing text.
+        if (e.keyCode === 37 || e.keyCode === 39) e.stopPropagation();
+
+        // Up/Down — leave input editing and let spatial nav move to next control.
+        if (e.keyCode === 38 || e.keyCode === 40) {
+            inputRef.current?.blur();
+            return;
+        }
         // OK (13) or Samsung "Fertig" (65376) — confirm input
         if (e.keyCode === 13 || e.keyCode === 65376) {
             confirmedRef.current = true;
