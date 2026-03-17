@@ -6,7 +6,9 @@ function classNames(...classes) {
 }
 
 export default function Item({ children, onClick }) {
-  const { ref, focused } = useFocusable();
+  const { ref, focused } = useFocusable({
+    onEnterPress: () => onClick?.(),
+  });
   useEffect(() => {
     if (focused) {
       ref.current.scrollIntoView({

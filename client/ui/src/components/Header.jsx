@@ -7,8 +7,12 @@ import TBLogo from '../assets/tizenbrew.svg';
 import { useTranslation } from 'react-i18next';
 
 function Button({ children, route, focus, focusKey }) {
-    const { ref, focusSelf, focused } = useFocusable({ focusKey });
     const location = useLocation();
+    const goToRoute = () => location.route(`/ui/dist/index.html${route}`);
+    const { ref, focusSelf, focused } = useFocusable({
+        focusKey,
+        onEnterPress: goToRoute,
+    });
 
     if (focus) {
         useEffect(() => {
@@ -19,7 +23,7 @@ function Button({ children, route, focus, focusKey }) {
         <button
             ref={ref}
             className={`flex items-center justify-center p-2 rounded-full bg-slate-800 hover:bg-slate-600 text-slate-100 ${focused ? 'focus' : ''}`}
-            onClick={() => location.route(`/ui/dist/index.html${route}`)}
+            onClick={goToRoute}
         >
             {children}
         </button>
