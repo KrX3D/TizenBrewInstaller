@@ -104,6 +104,14 @@ class Client {
                     msg += '\n\n' + JSON.stringify(payload.config, null, 2);
                 }
 
+                if (payload.attemptedPermissionFix) {
+                    if (payload.permissionFixApplied) {
+                        msg += `\n\nPermissions fix attempt: applied (0${payload.modeBefore} → 0${payload.mode})`;
+                    } else {
+                        msg += '\n\nPermissions fix attempt: failed (likely owner/app sandbox restriction).';
+                    }
+                }
+
                 toast.info(msg, 12000);
                 break;
             }
