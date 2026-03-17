@@ -82,8 +82,11 @@ function AddRow({ onAdd }) {
             inputRef.current?.blur();
             return;
         }
-        // OK (13) or Samsung "Fertig" (65376) — confirm input
-        if (e.keyCode === 13 || e.keyCode === 65376) {
+
+        // OK (13), Samsung "Fertig" (65376), or Green button (404) — confirm input
+        if (e.keyCode === 13 || e.keyCode === 65376 || e.keyCode === 404) {
+            e.preventDefault?.();
+            e.stopPropagation?.();
             confirmedRef.current = true;
             inputRef.current?.blur();
         }

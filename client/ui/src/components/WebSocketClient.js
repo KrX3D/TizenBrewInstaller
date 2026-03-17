@@ -12,7 +12,7 @@ const Events = {
     GetTBModules:           9,
     AddTBModule:            10,
     RemoveTBModule:         11,
-    CheckConfigurationAccess: 12
+    CheckConfigurationAccess: 12,
 };
 
 class Client {
