@@ -7,8 +7,12 @@ import TBLogo from '../assets/tizenbrew.svg';
 import { useTranslation } from 'react-i18next';
 
 function Button({ children, route, focus, focusKey }) {
-    const { ref, focusSelf, focused } = useFocusable();
     const location = useLocation();
+    const goToRoute = () => location.route(`/ui/dist/index.html${route}`);
+    const { ref, focusSelf, focused } = useFocusable({
+        focusKey,
+        onEnterPress: goToRoute,
+    });
 
     if (focus) {
         useEffect(() => {
@@ -18,9 +22,8 @@ function Button({ children, route, focus, focusKey }) {
     return (
         <button
             ref={ref}
-            focusKey={focus ? 'sn:focusable-item-1' : focusKey}
             className={`flex items-center justify-center p-2 rounded-full bg-slate-800 hover:bg-slate-600 text-slate-100 ${focused ? 'focus' : ''}`}
-            onClick={() => location.route(`/ui/dist/index.html${route}`)}
+            onClick={goToRoute}
         >
             {children}
         </button>
@@ -54,7 +57,7 @@ export default function Header() {
                     <Button route="/" focus={true} focusKey="sn:focusable-item-1">
                         <HomeIcon className="h-[4vh] w-[2vw]" />
                     </Button>
-                    <Button route="/about">
+                    <Button route="/about" focusKey="sn:focusable-item-2">
                         <QuestionMarkCircleIcon className="h-[4vh] w-[2vw]" />
                     </Button>
                 </div>

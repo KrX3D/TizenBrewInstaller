@@ -46,11 +46,11 @@ export default function App() {
       <LocationProvider>
         <Header ref={headerRef} />
         <div className="bg-slate-800 text-white overflow-hidden" style={{ height: `calc(100vh - ${headerHeight}px)` }}>
-          <div className={`flex justify-center ${!context.state.sharedData.error.message ? 'hidden' : ''}`}>
-            <div class="flex items-center p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 bg-slate-900 mt-8 w-[95vw] text-red-400" role="alert">
-              <ExclamationCircleIcon className="h-[4vw] w-[2vw] mr-2" />
-              <div>
-                <span class="text-2xl">{t(context.state.sharedData.error.message, context.state.sharedData.error.args)}</span>
+          <div className={`flex justify-center px-[3vw] ${!context.state.sharedData.error.message ? 'hidden' : ''}`}>
+            <div class="flex items-start p-4 mb-4 rounded-lg bg-slate-900 mt-6 w-full max-w-[94vw] text-red-300 border border-red-700" role="alert">
+              <ExclamationCircleIcon className="h-7 w-7 mr-3 mt-1 flex-shrink-0" />
+              <div className="min-w-0 max-h-[18vh] overflow-y-auto pr-2">
+                <span class="text-base leading-relaxed whitespace-pre-wrap break-all">{t(context.state.sharedData.error.message, context.state.sharedData.error.args)}</span>
               </div>
             </div>
           </div>
