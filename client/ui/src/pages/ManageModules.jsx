@@ -55,7 +55,6 @@ function AddRow({ onAdd }) {
     const [value, setValue] = useState(exampleModule);
     const inputRef   = useRef(null);
     const confirmedRef = useRef(false);
-    const lastSubmitAtRef = useRef(0);
     const { t } = useTranslation();
 
     const { ref: wrapRef, focused } = useFocusable({
@@ -73,22 +72,6 @@ function AddRow({ onAdd }) {
         setValue('');
     }
 
-    function submitConfirmed() {
-        const now = Date.now();
-        if (now - lastSubmitAtRef.current < 250) return;
-        lastSubmitAtRef.current = now;
-        confirmedRef.current = false;
-        submit();
-    }
-
-    function handleConfirmFromKeyboard() {
-        confirmedRef.current = true;
-        // Some Tizen versions only close keyboard on blur.
-        inputRef.current?.blur();
-        // Others may not reliably emit blur after "Fertig", so submit directly too.
-        submitConfirmed();
-    }
-
     function handleKeyDown(e) {
         // Left/Right — stop spatial nav stealing cursor movement while editing text.
         if (e.keyCode === 37 || e.keyCode === 39) e.stopPropagation();
@@ -98,21 +81,18 @@ function AddRow({ onAdd }) {
             inputRef.current?.blur();
             return;
         }
-        // Enter / Fertig key variants across TV firmware
-        if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 65376 || e.keyCode === 29443) {
-            handleConfirmFromKeyboard();
-        }
-    }
-
-    function handleKeyUp(e) {
-        if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 65376 || e.keyCode === 29443) {
-            handleConfirmFromKeyboard();
+        // OK (13) or Samsung "Fertig" (65376) — confirm input
+        if (e.keyCode === 13 || e.keyCode === 65376) {
+            // "Fertig" / Enter closes keyboard and adds current module text.
+            confirmedRef.current = true;
+            inputRef.current?.blur();
         }
     }
 
     function handleBlur() {
         if (confirmedRef.current) {
-            submitConfirmed();
+            confirmedRef.current = false;
+            submit();
         }
     }
 
@@ -138,7 +118,6 @@ function AddRow({ onAdd }) {
                     className="flex-1 bg-transparent text-slate-100 text-sm font-mono outline-none"
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    onKeyUp={handleKeyUp}
                     onBlur={handleBlur}
                     onFocus={e => {
                         // Make it easy to replace the prefilled example on TV keyboards.
