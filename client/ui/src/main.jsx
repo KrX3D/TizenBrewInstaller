@@ -18,6 +18,17 @@ window.addEventListener('popstate', () => {
     }
 });
 
+function restoreHomeFocus() {
+    // Retry a few times because route transitions/layout can lag on some TVs.
+    [40, 120, 260].forEach(delay => setTimeout(() => setFocus('home-card-install'), delay));
+}
+
+window.addEventListener('popstate', () => {
+    if (window.location.pathname === '/ui/dist/index.html' || window.location.pathname === '/ui/dist/index.html/') {
+        restoreHomeFocus();
+    }
+});
+
 window.addEventListener('keydown', (e) => {
     if (e.keyCode === 10009) {
         const now = Date.now();
