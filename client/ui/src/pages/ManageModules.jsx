@@ -46,22 +46,17 @@ function ModuleRow({ mod, focusKey, onRemove }) {
     );
 }
 
-// ─── Add row — single focusable input ────────────────────────────────────────
-// The spatial-nav item is a wrapper div. When the user presses OK on it the
-// real <input> receives .focus() which opens the TV virtual keyboard.
-// Pressing OK / Fertig inside the keyboard confirms and calls submit().
-function AddRow({ onAdd }) {
+// ─── Add row ──────────────────────────────────────────────────────────────────
+function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef }) {
     const exampleModule = 'npm/@foxreis/tizentube';
     const [value, setValue] = useState(exampleModule);
-    const inputRef   = useRef(null);
+    const inputRef = externalInputRef;
     const confirmedRef = useRef(false);
-    const lastSubmitAtRef = useRef(0);
     const { t } = useTranslation();
 
     const { ref: wrapRef, focused } = useFocusable({
         focusKey: 'add-module-input',
         onEnterPress: () => {
-            // OK while the wrapper is spatially focused → open keyboard
             inputRef.current?.focus();
         },
     });
@@ -73,17 +68,18 @@ function AddRow({ onAdd }) {
         setValue('');
     }
 
+    // Expose submit so the page-level green handler can call it
+    if (onSubmitRef) onSubmitRef.current = submit;
+
     function handleKeyDown(e) {
-        // Left/Right — stop spatial nav stealing cursor movement while editing text.
         if (e.keyCode === 37 || e.keyCode === 39) e.stopPropagation();
 
-        // Up/Down — leave input editing and let spatial nav move to next control.
         if (e.keyCode === 38 || e.keyCode === 40) {
             inputRef.current?.blur();
             return;
         }
 
-        // OK (13), Samsung "Fertig" (65376), or Green button (404) — confirm input
+        // OK (13), Fertig (65376), or Green (404) — confirm
         if (e.keyCode === 13 || e.keyCode === 65376 || e.keyCode === 404) {
             e.preventDefault?.();
             e.stopPropagation?.();
@@ -104,7 +100,6 @@ function AddRow({ onAdd }) {
             <p className="text-indigo-300 font-semibold text-sm">{t('tbModules.addTitle')}</p>
             <p className="text-slate-500 text-xs">{t('tbModules.addHint')}</p>
 
-            {/* Focusable wrapper — press OK to open keyboard */}
             <div
                 ref={wrapRef}
                 className={[
@@ -122,21 +117,16 @@ function AddRow({ onAdd }) {
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onBlur={handleBlur}
-                    onFocus={e => {
-                        // Make it easy to replace the prefilled example on TV keyboards.
-                        e.target.select();
-                    }}
+                    onFocus={e => e.target.select()}
                 />
             </div>
 
-            {/* Preview */}
             {value.trim() && (
                 <p className="text-slate-500 text-xs font-mono">
                     → <span className="text-indigo-300">{value.trim()}</span>
                 </p>
             )}
 
-            {/* Add button */}
             <AddButton onSubmit={submit} label={t('tbModules.addButton')} />
         </div>
     );
@@ -169,6 +159,10 @@ export default function ManageModules() {
     const { t } = useTranslation();
     const modules = state.sharedData.tbModules ?? [];
 
+    // Shared refs so the page-level green handler can reach into AddRow
+    const addInputRef   = useRef(null);
+    const addSubmitRef  = useRef(null);
+
     useEffect(() => {
         state.client.send({ type: Events.GetTBModules });
         setTimeout(() => {
@@ -184,18 +178,38 @@ export default function ManageModules() {
         }
     }, [modules.length]);
 
+    // ── Page-level green button handler ──────────────────────────────────────
+    // Green (404): if the input is already open (document.activeElement === inputRef),
+    // submit; otherwise focus the input to open the keyboard.
+    useEffect(() => {
+        function onKeyDown(e) {
+            if (e.keyCode !== 404) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            const inputEl = addInputRef.current;
+            if (!inputEl) return;
+
+            if (document.activeElement === inputEl) {
+                // Keyboard is open — confirm the entry
+                addSubmitRef.current?.();
+            } else {
+                // Keyboard is closed — open it
+                setFocus('add-module-input');
+                setTimeout(() => inputEl.focus(), 50);
+            }
+        }
+
+        window.addEventListener('keydown', onKeyDown, true);
+        return () => window.removeEventListener('keydown', onKeyDown, true);
+    }, []);
+
     function addModule(moduleStr) {
-        state.client.send({
-            type: Events.AddTBModule,
-            payload: { module: moduleStr }
-        });
+        state.client.send({ type: Events.AddTBModule, payload: { module: moduleStr } });
     }
 
     function removeModule(moduleStr) {
-        state.client.send({
-            type: Events.RemoveTBModule,
-            payload: { module: moduleStr }
-        });
+        state.client.send({ type: Events.RemoveTBModule, payload: { module: moduleStr } });
     }
 
     return (
@@ -206,8 +220,12 @@ export default function ManageModules() {
             <h1 className="text-2xl font-bold text-indigo-400 mb-1 text-center w-full">
                 {t('tbModules.pageTitle')}
             </h1>
-            <p className="text-slate-400 text-sm mb-4 text-center">
+            <p className="text-slate-400 text-sm mb-1 text-center">
                 {t('tbModules.pageDesc')}
+            </p>
+            {/* Green button hint */}
+            <p className="text-slate-600 text-xs mb-3 text-center">
+                🟢 {t('tbModules.greenHint')}
             </p>
 
             <div className="w-full max-w-2xl flex flex-col gap-2">
@@ -226,7 +244,11 @@ export default function ManageModules() {
                     ))
                 )}
 
-                <AddRow onAdd={addModule} />
+                <AddRow
+                    onAdd={addModule}
+                    inputRef={addInputRef}
+                    onSubmitRef={addSubmitRef}
+                />
             </div>
 
             <p className="mt-4 mb-2 text-slate-500 text-xs text-center">
