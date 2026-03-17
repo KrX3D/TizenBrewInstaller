@@ -51,7 +51,8 @@ function ModuleRow({ mod, focusKey, onRemove }) {
 // real <input> receives .focus() which opens the TV virtual keyboard.
 // Pressing OK / Fertig inside the keyboard confirms and calls submit().
 function AddRow({ onAdd }) {
-    const [value, setValue] = useState('');
+    const exampleModule = 'npm/@foxreis/tizentube';
+    const [value, setValue] = useState(exampleModule);
     const inputRef   = useRef(null);
     const confirmedRef = useRef(false);
     const { t } = useTranslation();
@@ -112,11 +113,15 @@ function AddRow({ onAdd }) {
                     ref={inputRef}
                     type="text"
                     value={value}
-                    placeholder={t('tbModules.inputPlaceholder')}
+                    placeholder={`${t('tbModules.inputPlaceholder')} (e.g. ${exampleModule})`}
                     className="flex-1 bg-transparent text-slate-100 text-sm font-mono outline-none"
                     onChange={e => setValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onBlur={handleBlur}
+                    onFocus={e => {
+                        // Make it easy to replace the prefilled example on TV keyboards.
+                        e.target.select();
+                    }}
                 />
             </div>
 
