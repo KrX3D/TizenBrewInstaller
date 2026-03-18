@@ -91,7 +91,7 @@
         "pageDesc": "Module werden beim nächsten TizenBrew-Start geladen.",
         "empty": "Noch keine Module installiert.",
         "addTitle": "Modul hinzufügen",
-        "addHint": "Vollständigen Modul-String eingeben, z.B. npm/@foxreis/tizentube oder gh/benutzer/repo",
+        "addHint": "Vollständigen Modul-String eingeben, z.B. npm/@foxreis/tizentube oder gh/reisxd/tizentube",
         "inputPlaceholder": "npm/@foxreis/tizentube",
         "addButton": "Modul hinzufügen",
         "addSuccess": "Modul erfolgreich hinzugefügt.",

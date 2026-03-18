@@ -91,7 +91,7 @@
         "pageDesc": "Modules are loaded by TizenBrew on next launch.",
         "empty": "No modules installed yet.",
         "addTitle": "Add a module",
-        "addHint": "Enter the full module string, e.g. npm/@foxreis/tizentube or gh/user/repo",
+        "addHint": "Enter the full module string, e.g. npm/@foxreis/tizentube or gh/reisxd/tizentube",
         "inputPlaceholder": "npm/@foxreis/tizentube",
         "addButton": "Add module",
         "addSuccess": "Module added successfully.",
