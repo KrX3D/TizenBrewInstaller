@@ -52,7 +52,24 @@
         "statError": "tizenbrewConfig.json konnte nicht gelesen werden: {{error}}",
         "resetSuccess": "tizenbrewConfig.json erfolgreich gelöscht.",
         "permissionDenied": "tizenbrewConfig.json kann nicht gelöscht werden — Zugriff verweigert.",
-        "resetError": "tizenbrewConfig.json konnte nicht gelöscht werden: {{error}}"
+        "resetError": "tizenbrewConfig.json konnte nicht gelöscht werden: {{error}}",
+        "permFix": {
+            "noChange": "Berechtigungskorrektur: bereits bei 0{{mode}} (keine Änderung nötig)",
+            "applied": "Berechtigungskorrektur: angewendet (0{{before}} → 0{{after}})",
+            "failed": "Berechtigungskorrektur: fehlgeschlagen (Eigentümer/Sandbox-Einschränkung)"
+        }
+    },
+    "configAccess": {
+        "notFound": "Konfigurationsdatei nicht gefunden.",
+        "header": "Konfig-Zugriffsprüfung:",
+        "write": "Schreiben: {{value}}",
+        "delete": "Löschen: {{value}}",
+        "yes": "ja",
+        "no": "nein",
+        "fixSuccess": "Korrekturversuch: erfolgreich",
+        "fixFailed": "Korrekturversuch: fehlgeschlagen",
+        "fixReason": "Grund: {{reason}}",
+        "sandboxWarning": "Die Datei kann durch Eigentümer- / App-Sandbox-Einschränkungen weiterhin gesperrt sein."
     },
     "modal": {
         "ok": "OK",

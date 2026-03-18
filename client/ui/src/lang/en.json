@@ -52,7 +52,24 @@
         "statError": "Could not stat tizenbrewConfig.json: {{error}}",
         "resetSuccess": "tizenbrewConfig.json deleted successfully.",
         "permissionDenied": "Cannot delete tizenbrewConfig.json — permission denied.",
-        "resetError": "Failed to delete tizenbrewConfig.json: {{error}}"
+        "resetError": "Failed to delete tizenbrewConfig.json: {{error}}",
+        "permFix": {
+            "noChange": "Permission fix: already at 0{{mode}} (no change needed)",
+            "applied": "Permission fix: applied (0{{before}} → 0{{after}})",
+            "failed": "Permission fix: failed (likely owner/app sandbox restriction)"
+        }
+    },
+    "configAccess": {
+        "notFound": "Configuration file not found.",
+        "header": "Config access check:",
+        "write": "Write: {{value}}",
+        "delete": "Delete: {{value}}",
+        "yes": "yes",
+        "no": "no",
+        "fixSuccess": "Fix attempt: success",
+        "fixFailed": "Fix attempt: failed",
+        "fixReason": "Reason: {{reason}}",
+        "sandboxWarning": "The file may still be blocked by owner / app sandbox restrictions."
     },
     "modal": {
         "ok": "OK",

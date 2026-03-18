@@ -11,6 +11,7 @@ const COL_INSTALL = 1;
 const COL_DELETE  = 2;
 
 function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete }) {
+    const { t } = useTranslation();
     const [col, setCol] = useState(COL_NAME);
 
     const { ref, focused } = useFocusable({
@@ -32,19 +33,17 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete }) {
         if (focused) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, [focused]);
 
-    // Ring colours per column
     function ring(c) {
         if (!focused || col !== c) return '';
         return c === COL_DELETE ? 'ring-2 ring-red-400' : c === COL_INSTALL ? 'ring-2 ring-indigo-300' : 'ring-2 ring-white';
     }
 
     return (
-        // Fixed height so all rows are identical regardless of badge / content
         <div
             ref={ref}
             className={[
-                'flex items-center gap-2 rounded-xl px-3 border-2 transition-colors',
-                'h-16',                              // ← fixed height, same for all rows
+                'flex items-center gap-2 rounded-xl px-3 border-2 transition-colors mb-3',
+                'h-16',
                 isActive  ? 'border-violet-500 bg-violet-950'
                 : focused ? 'border-sky-500 bg-slate-800'
                           : 'border-slate-700 bg-slate-900'
@@ -60,10 +59,9 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete }) {
                 <span className={`font-mono text-base font-medium truncate ${isActive ? 'text-violet-200' : 'text-slate-200'}`}>
                     {repo}
                 </span>
-                {/* Badge — right-aligned, doesn't affect row height */}
                 {isActive && (
                     <span className="ml-auto flex-shrink-0 text-xs font-bold text-violet-300 bg-violet-700 px-2 py-0.5 rounded-full">
-                        ACTIVE
+                        {t('savedRepos.active').toUpperCase()}
                     </span>
                 )}
             </div>
@@ -88,7 +86,6 @@ export default function SavedRepos() {
     const { repoList, tizenBrewRepo } = state.sharedData;
 
     useEffect(() => {
-        // Focus the active repo's row; fall back to first row if none matches
         const activeIndex = repoList.indexOf(tizenBrewRepo);
         const targetKey = `repo-row-${activeIndex >= 0 ? activeIndex : 0}`;
         setFocus(targetKey);
@@ -113,11 +110,14 @@ export default function SavedRepos() {
 
     return (
         <div className="flex flex-col items-center px-4 pt-4 overflow-y-auto" style={{ maxHeight: 'calc(92vh - 8vh)' }}>
-            <h1 className="text-2xl font-bold text-violet-400 mb-4 text-center w-full">
+            <h1 className="text-2xl font-bold text-violet-400 mb-2 text-center w-full">
                 {t('savedRepos.pageTitle')}
             </h1>
+            <p className="text-slate-400 text-sm mb-4 text-center">
+                {t('savedRepos.pageDesc')}
+            </p>
 
-            <div className="w-full max-w-2xl flex flex-col gap-2">
+            <div className="w-full max-w-2xl flex flex-col">
                 {repoList.length === 0 ? (
                     <p className="text-slate-500 text-center py-10 text-lg">{t('savedRepos.empty')}</p>
                 ) : (
@@ -137,7 +137,7 @@ export default function SavedRepos() {
 
             {repoList.length > 0 && (
                 <p className="mt-4 mb-2 text-slate-500 text-xs text-center">
-                    ◀▶ switch action &nbsp;|&nbsp; OK = confirm &nbsp;|&nbsp; ▲▼ switch repo
+                    {t('savedRepos.hint')}
                 </p>
             )}
         </div>

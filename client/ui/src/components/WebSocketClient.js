@@ -81,24 +81,29 @@ class Client {
                 if (!toast) break;
 
                 if (!payload.exists) {
-                    toast.info('Configuration file not found.');
+                    toast.info(i18next.t('configAccess.notFound'));
                     break;
                 }
 
+                const yes = i18next.t('configAccess.yes');
+                const no  = i18next.t('configAccess.no');
+
                 let msg =
-                    `Config access check:\n` +
-                    `Write: ${payload.canWrite ? 'yes' : 'no'}\n` +
-                    `Delete: ${payload.canDelete ? 'yes' : 'no'}`;
+                    i18next.t('configAccess.header') + '\n' +
+                    i18next.t('configAccess.write',  { value: payload.canWrite  ? yes : no }) + '\n' +
+                    i18next.t('configAccess.delete', { value: payload.canDelete ? yes : no });
 
                 if (payload.fixAttempt) {
-                    msg += `\nFix attempt: ${payload.fixAttempt.success ? 'success' : 'failed'}`;
+                    msg += '\n' + (payload.fixAttempt.success
+                        ? i18next.t('configAccess.fixSuccess')
+                        : i18next.t('configAccess.fixFailed'));
                     if (payload.fixAttempt.reason) {
-                        msg += `\nReason: ${payload.fixAttempt.reason}`;
+                        msg += '\n' + i18next.t('configAccess.fixReason', { reason: payload.fixAttempt.reason });
                     }
                 }
 
                 if (!payload.canWrite || !payload.canDelete) {
-                    msg += `\n\nThe file may still be blocked by owner / app sandbox restrictions.`;
+                    msg += '\n\n' + i18next.t('configAccess.sandboxWarning');
                 }
 
                 toast.info(msg, 10000);
@@ -116,15 +121,18 @@ class Client {
                 }
 
                 const sizeKb = (payload.size / 1024).toFixed(1);
-                const mtime = new Date(payload.mtime).toLocaleString();
+                const mtime  = new Date(payload.mtime).toLocaleString();
                 const permStr = [
                     payload.readable ? i18next.t('tizenBrewConfig.readable') : null,
                     payload.writable ? i18next.t('tizenBrewConfig.writable') : null,
                 ].filter(Boolean).join(', ') || i18next.t('tizenBrewConfig.noPermissions');
                 const modeStr = payload.mode ? ` (0${payload.mode})` : '';
 
-                // Build the toast message — header info + full pretty-printed JSON
-                let msg = i18next.t('tizenBrewConfig.fileInfo', { sizeKb, mtime, permStr: `${permStr}${modeStr}` });
+                let msg = i18next.t('tizenBrewConfig.fileInfo', {
+                    sizeKb,
+                    mtime,
+                    permStr: `${permStr}${modeStr}`
+                });
 
                 if (payload.parseError) {
                     msg += '\n\n⚠️ ' + payload.parseError;
@@ -135,12 +143,15 @@ class Client {
                 if (payload.attemptedPermissionFix) {
                     if (payload.permissionFixApplied) {
                         if (payload.modeBefore === payload.mode) {
-                            msg += `\n\nPermissions fix attempt: already at 0${payload.mode} (no mode change needed)`;
+                            msg += '\n\n' + i18next.t('tizenBrewConfig.permFix.noChange', { mode: payload.mode });
                         } else {
-                            msg += `\n\nPermissions fix attempt: applied (0${payload.modeBefore} → 0${payload.mode})`;
+                            msg += '\n\n' + i18next.t('tizenBrewConfig.permFix.applied', {
+                                before: payload.modeBefore,
+                                after:  payload.mode
+                            });
                         }
                     } else {
-                        msg += '\n\nPermissions fix attempt: failed (likely owner/app sandbox restriction).';
+                        msg += '\n\n' + i18next.t('tizenBrewConfig.permFix.failed');
                     }
                 }
 
