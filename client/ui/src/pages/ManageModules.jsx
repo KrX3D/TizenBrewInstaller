@@ -78,7 +78,7 @@ function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef }) {
     return (
         <div className="flex flex-col gap-2 rounded-xl border-2 border-indigo-700 bg-slate-900 px-4 py-3 mt-2">
             <p className="text-indigo-300 font-semibold text-sm">{t('tbModules.addTitle')}</p>
-            <p className="text-slate-500 text-xs">{t('tbModules.addHint')}</p>
+            <p className="text-white text-sm mt-1 mb-2">{t('tbModules.addHint')}</p>
             <div
                 ref={wrapRef}
                 className={[
@@ -99,9 +99,7 @@ function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef }) {
                     onFocus={e => e.target.select()}
                 />
             </div>
-            {value.trim() && (
-                <p className="text-slate-500 text-xs font-mono">→ <span className="text-indigo-300">{value.trim()}</span></p>
-            )}
+            <div className="h-2" />
             <AddButton onSubmit={submit} label={t('tbModules.addButton')} />
         </div>
     );
@@ -184,7 +182,6 @@ export default function ManageModules() {
         <div className="flex flex-col items-center px-4 pt-4 overflow-y-auto" style={{ maxHeight: 'calc(92vh - 8vh)' }}>
             <h1 className="text-2xl font-bold text-indigo-400 mb-1 text-center w-full">{t('tbModules.pageTitle')}</h1>
             <p className="text-slate-400 text-sm mb-1 text-center">{t('tbModules.pageDesc')}</p>
-            <p className="text-slate-600 text-xs mb-3 text-center">🟢 {t('tbModules.greenHint')}</p>
 
             <div className="w-full max-w-2xl flex flex-col gap-2">
                 {modules.length === 0
