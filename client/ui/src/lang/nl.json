@@ -17,6 +17,8 @@
     "resigning": {
         "resigningRequired": "Hersigneren vereist",
         "resigningRequiredDesc": "Vanaf Tizen 7 moeten alle pakketten hersigned worden met een Samsung Certificate.\nScan de QR-code om in te loggen op uw Samsung-account en kopieer de JSON-antwoord die u krijgt na inloggen.",
+        "resigningRequiredPCDesc": "Vanaf Tizen 7 moeten alle pakketten opnieuw worden gesigneerd met een Samsung-certificaat.\nKlik op de onderstaande knop om in te loggen op uw Samsung-account.",
+        "resigningRequiredOpenAuthButton": "Inloggen op Samsung-account",
         "resigningRequiredAccessInfo": "Nadat u het JSON-antwoord hebt gekopieerd, ga naar http://{{ip}}:4794 en plak het in het tekstveld en druk op de \"Submit\" Knop.",
         "resigningDeviceSameNetwork": "Zorg ervoor dat uw apparaat op het zelfde netwerk is als uw TV."
     },
@@ -26,7 +28,83 @@
         "installFromUSB": "Installeren van USB",
         "installFromGH": "Installeren van GitHub",
         "installingAgain": "TizenBrew Installer is geinstalleerd als een USB Demo Package. Het zal nu worden geinstalleerd als een normaal pakket.",
-        "alreadyInstalled": "TizenBrew Installer als een USB Demo Package is geinstalleerd. U kunt het nu verwijderen."
+        "alreadyInstalled": "TizenBrew Installer als een USB Demo Package is geinstalleerd. U kunt het nu verwijderen.",
+        "install": "{{label}} installeren",
+        "update": "{{label}} bijwerken",
+        "installedVersion": "Geïnstalleerd: {{version}}",
+        "versionUnknown": "Versie: onbekend (aangepaste repo)",
+        "installTBI": "TizenBrew Installer installeren",
+        "connectToTV": "Verbinden met TV"
+    },
+    "installerDesktop": {
+        "sdbConnectionRefused": "Kan geen verbinding maken met de SDB Daemon. Zorg ervoor dat de TV aan staat en het IP-adres correct is.",
+        "sdbConnectionReset": "Kan geen verbinding maken met de SDB Daemon. U hebt de Host PC IP mogelijk niet ingesteld op het IP van dit apparaat, of de TV niet correct opnieuw opgestart. Houd de aan/uit-knop ingedrukt tot het Samsung-logo verschijnt."
+    },
+    "tizenBrewConfig": {
+        "checkButton": "TB-configuratie controleren",
+        "checkDesc": "Controleren of tizenbrewConfig.json bestaat en de bijbehorende rechten.",
+        "resetButton": "TB-configuratie resetten",
+        "resetDesc": "tizenbrewConfig.json verwijderen — TizenBrew maakt het bestand bij de volgende start opnieuw aan.",
+        "resetConfirm": "tizenbrewConfig.json verwijderen?\nTizenBrew maakt het bestand bij de volgende start opnieuw aan.",
+        "notFound": "tizenbrewConfig.json niet gevonden.",
+        "fileInfo": "tizenbrewConfig.json\nGrootte: {{sizeKb}} KB  •  Rechten: {{permStr}}\nLaatst gewijzigd: {{mtime}}",
+        "readable": "leesbaar",
+        "writable": "beschrijfbaar",
+        "noPermissions": "geen rechten",
+        "statError": "Kan tizenbrewConfig.json niet lezen: {{error}}",
+        "resetSuccess": "tizenbrewConfig.json succesvol verwijderd.",
+        "permissionDenied": "Kan tizenbrewConfig.json niet verwijderen — toegang geweigerd.",
+        "resetError": "Verwijderen van tizenbrewConfig.json mislukt: {{error}}",
+        "permFix": {
+            "noChange": "Rechtencorrectie: al op 0{{mode}} (geen wijziging nodig)",
+            "applied": "Rechtencorrectie: toegepast (0{{before}} → 0{{after}})",
+            "failed": "Rechtencorrectie: mislukt (eigenaar/sandbox-beperking)"
+        }
+    },
+    "configAccess": {
+        "notFound": "Configuratiebestand niet gevonden.",
+        "header": "Toegangscontrole configuratie:",
+        "write": "Schrijven: {{value}}",
+        "delete": "Verwijderen: {{value}}",
+        "yes": "ja",
+        "no": "nee",
+        "fixSuccess": "Herstelpoging: geslaagd",
+        "fixFailed": "Herstelpoging: mislukt",
+        "fixReason": "Reden: {{reason}}",
+        "sandboxWarning": "Het bestand kan nog steeds worden geblokkeerd door eigenaar- of app-sandbox-beperkingen."
+    },
+    "modal": {
+        "ok": "OK",
+        "cancel": "Annuleren"
+    },
+    "savedRepos": {
+        "button": "Opgeslagen repos",
+        "desc": "{{count}} opgeslagen repo('s)",
+        "active": "Actief",
+        "pageTitle": "Opgeslagen repos",
+        "pageDesc": "Selecteer een repo om deze actief te maken. Gebruik ◀▶ voor Installeren / Verwijderen.",
+        "empty": "Nog geen opgeslagen repos. Installeer vanuit GitHub om er een toe te voegen.",
+        "hint": "◀▶ actie wisselen  |  OK = bevestigen  |  ▲▼ repo wisselen"
+    },
+    "tbModules": {
+        "homeButton": "Modules beheren",
+        "homeDesc": "TizenBrew-modules toevoegen of verwijderen uit tizenbrewConfig.json.",
+        "pageTitle": "Modules beheren",
+        "pageDesc": "Modules worden geladen bij de volgende TizenBrew-start.",
+        "empty": "Nog geen modules geïnstalleerd.",
+        "addTitle": "Module toevoegen",
+        "addHint": "Voer de volledige modulestring in, bijv. npm/@foxreis/tizentube of gh/reisxd/tizentube",
+        "inputPlaceholder": "npm/@foxreis/tizentube",
+        "addButton": "Module toevoegen",
+        "addSuccess": "Module succesvol toegevoegd.",
+        "duplicate": "Deze module staat al in de lijst.",
+        "addError": "Module toevoegen mislukt: {{error}}",
+        "removeSuccess": "Module verwijderd.",
+        "removeError": "Module verwijderen mislukt: {{error}}",
+        "loadError": "Modules laden mislukt: {{error}}",
+        "greenKey": "GROENE toets: toetsenbord openen / module toevoegen",
+        "navHint1": "Navigeer naar invoer, druk op OK of GROEN om toetsenbord te openen",
+        "navHint2": "OK op een modulerij = module verwijderen"
     },
     "__contributors": [
         "owen-the-kid"

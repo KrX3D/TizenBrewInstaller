@@ -1,34 +1,112 @@
 {
-  "service": {
-    "alreadyRunning": "Le service est déjà en cours d'exécution.",
-    "started": "Service démarré."
-  },
-  "errors": {
-    "debuggingNotEnabled": "Erreur: Impossible de ce connecter au service SDB. Êtes-vous sûr que vous avez mis Host PC IP à 127.0.0.1 ? Si c'est le cas, maintenez le bouton d'alimentation jusqu'à voir le logo Samsung. "
-  },
-  "installStatus": {
-    "fetching": "Récupération du paquet",
-    "resigning": "Signature du paquet",
-    "parsing": "Analyse du paquet",
-    "installing": "Installation du paquet ",
-    "installed": "Paquet installé",
-    "installFailed": "L'installation a échouée : {{line}}"
-  },
-  "resigning": {
-    "resigningRequired": "Le paquet doit être re-signé",
-    "resigningRequiredDesc": "Depuis Tizen 7, tous les paquets doivent être re-signés avec un certificat Samsung.\nVeuillez scanner le QR code pour vous connecter à votre compte Samsung puis copier la réponse JSON obtenue après connexion.",
-    "resigningRequiredAccessInfo": "Après avoir copié la réponse JSON, allez à http://{{ip}}:4794 et collez le dans le champ de texte, puis appuyez sur le bouton \"Submit\".",
-    "resigningDeviceSameNetwork": "Votre appareil doit être sur le même réseau que votre TV."
-  },
-  "installer": {
-    "installTB": "Installer TizenBrew",
-    "updateTB": "Mettre à jour TizenBrew",
-    "installFromUSB": "Installer à partir d'un périphérique USB",
-    "installFromGH": "Installer depuis GitHub",
-    "installingAgain": "TizenBrew Installer est installé en tant que Paquet Démo USB. Il va maintenant être réinstallé en tant que paquet normal.",
-    "alreadyInstalled": "Le Paquet Démo USB de TizenBrew Installer est installé. Vous pouvez maintenant le supprimer."
-  },
-  "__contributors": [
-    "Kiriox94"
-  ]
+    "service": {
+        "alreadyRunning": "Le service est déjà en cours d'exécution.",
+        "started": "Service démarré."
+    },
+    "errors": {
+        "debuggingNotEnabled": "Erreur: Impossible de ce connecter au service SDB. Êtes-vous sûr que vous avez mis Host PC IP à 127.0.0.1 ? Si c'est le cas, maintenez le bouton d'alimentation jusqu'à voir le logo Samsung. "
+    },
+    "installStatus": {
+        "fetching": "Récupération du paquet",
+        "resigning": "Signature du paquet",
+        "parsing": "Analyse du paquet",
+        "installing": "Installation du paquet ",
+        "installed": "Paquet installé",
+        "installFailed": "L'installation a échouée : {{line}}"
+    },
+    "resigning": {
+        "resigningRequired": "Le paquet doit être re-signé",
+        "resigningRequiredDesc": "Depuis Tizen 7, tous les paquets doivent être re-signés avec un certificat Samsung.\nVeuillez scanner le QR code pour vous connecter à votre compte Samsung puis copier la réponse JSON obtenue après connexion.",
+        "resigningRequiredPCDesc": "Depuis Tizen 7, tous les paquets doivent être re-signés avec un certificat Samsung.\nVeuillez cliquer sur le bouton ci-dessous pour vous connecter à votre compte Samsung.",
+        "resigningRequiredOpenAuthButton": "Se connecter au compte Samsung",
+        "resigningRequiredAccessInfo": "Après avoir copié la réponse JSON, allez à http://{{ip}}:4794 et collez le dans le champ de texte, puis appuyez sur le bouton \"Submit\".",
+        "resigningDeviceSameNetwork": "Votre appareil doit être sur le même réseau que votre TV."
+    },
+    "installer": {
+        "installTB": "Installer TizenBrew",
+        "updateTB": "Mettre à jour TizenBrew",
+        "installFromUSB": "Installer à partir d'un périphérique USB",
+        "installFromGH": "Installer depuis GitHub",
+        "installingAgain": "TizenBrew Installer est installé en tant que Paquet Démo USB. Il va maintenant être réinstallé en tant que paquet normal.",
+        "alreadyInstalled": "Le Paquet Démo USB de TizenBrew Installer est installé. Vous pouvez maintenant le supprimer.",
+        "install": "Installer {{label}}",
+        "update": "Mettre à jour {{label}}",
+        "installedVersion": "Installé : {{version}}",
+        "versionUnknown": "Version : inconnue (dépôt personnalisé)",
+        "installTBI": "Installer TizenBrew Installer",
+        "connectToTV": "Connecter à la TV"
+    },
+    "installerDesktop": {
+        "sdbConnectionRefused": "Connexion au SDB Daemon impossible. Assurez-vous que la TV est allumée et que l'adresse IP est correcte.",
+        "sdbConnectionReset": "Connexion au SDB Daemon impossible. Soit vous n'avez pas défini l'IP du PC hôte sur l'IP de cet appareil, soit vous n'avez pas redémarré la TV correctement. Maintenez le bouton d'alimentation jusqu'à voir le logo Samsung."
+    },
+    "tizenBrewConfig": {
+        "checkButton": "Vérifier la config TB",
+        "checkDesc": "Vérifier si tizenbrewConfig.json existe et ses permissions.",
+        "resetButton": "Réinitialiser la config TB",
+        "resetDesc": "Supprimer tizenbrewConfig.json — TizenBrew la recréera au prochain démarrage.",
+        "resetConfirm": "Supprimer tizenbrewConfig.json ?\nTizenBrew la recréera au prochain démarrage.",
+        "notFound": "tizenbrewConfig.json est introuvable.",
+        "fileInfo": "tizenbrewConfig.json\nTaille : {{sizeKb}} Ko  •  Permissions : {{permStr}}\nDernière modification : {{mtime}}",
+        "readable": "lisible",
+        "writable": "accessible en écriture",
+        "noPermissions": "aucune permission",
+        "statError": "Impossible de lire tizenbrewConfig.json : {{error}}",
+        "resetSuccess": "tizenbrewConfig.json supprimé avec succès.",
+        "permissionDenied": "Impossible de supprimer tizenbrewConfig.json — permission refusée.",
+        "resetError": "Échec de la suppression de tizenbrewConfig.json : {{error}}",
+        "permFix": {
+            "noChange": "Correction des permissions : déjà à 0{{mode}} (aucun changement nécessaire)",
+            "applied": "Correction des permissions : appliquée (0{{before}} → 0{{after}})",
+            "failed": "Correction des permissions : échouée (restriction propriétaire/sandbox)"
+        }
+    },
+    "configAccess": {
+        "notFound": "Fichier de configuration introuvable.",
+        "header": "Vérification de l'accès à la config :",
+        "write": "Écriture : {{value}}",
+        "delete": "Suppression : {{value}}",
+        "yes": "oui",
+        "no": "non",
+        "fixSuccess": "Tentative de correction : réussie",
+        "fixFailed": "Tentative de correction : échouée",
+        "fixReason": "Raison : {{reason}}",
+        "sandboxWarning": "Le fichier peut encore être bloqué par les restrictions du propriétaire / sandbox de l'application."
+    },
+    "modal": {
+        "ok": "OK",
+        "cancel": "Annuler"
+    },
+    "savedRepos": {
+        "button": "Dépôts enregistrés",
+        "desc": "{{count}} dépôt(s) enregistré(s)",
+        "active": "Actif",
+        "pageTitle": "Dépôts enregistrés",
+        "pageDesc": "Sélectionnez un dépôt pour l'activer. Utilisez ◀▶ pour Installer / Supprimer.",
+        "empty": "Aucun dépôt enregistré. Installez depuis GitHub pour en ajouter un.",
+        "hint": "◀▶ changer d'action  |  OK = confirmer  |  ▲▼ changer de dépôt"
+    },
+    "tbModules": {
+        "homeButton": "Gérer les modules",
+        "homeDesc": "Ajouter ou supprimer des modules TizenBrew dans tizenbrewConfig.json.",
+        "pageTitle": "Gérer les modules",
+        "pageDesc": "Les modules sont chargés au prochain démarrage de TizenBrew.",
+        "empty": "Aucun module installé.",
+        "addTitle": "Ajouter un module",
+        "addHint": "Entrez la chaîne complète du module, ex. npm/@foxreis/tizentube ou gh/reisxd/tizentube",
+        "inputPlaceholder": "npm/@foxreis/tizentube",
+        "addButton": "Ajouter le module",
+        "addSuccess": "Module ajouté avec succès.",
+        "duplicate": "Ce module est déjà dans la liste.",
+        "addError": "Échec de l'ajout du module : {{error}}",
+        "removeSuccess": "Module supprimé.",
+        "removeError": "Échec de la suppression du module : {{error}}",
+        "loadError": "Impossible de charger les modules : {{error}}",
+        "greenKey": "Touche VERTE : ouvrir le clavier / soumettre le module",
+        "navHint1": "Naviguer vers la saisie, appuyer sur OK ou VERT pour ouvrir le clavier",
+        "navHint2": "OK sur une ligne de module = supprimer le module"
+    },
+    "__contributors": [
+        "Kiriox94"
+    ]
 }
