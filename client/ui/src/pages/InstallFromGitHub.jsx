@@ -29,7 +29,7 @@ export default function InstallFromGitHub() {
     }
 
     return (
-        <div className="relative isolate lg:px-8">
+        <div className="relative isolate lg:px-8 pt-6">
             <div className="mx-auto flex flex-wrap justify-center gap-4 top-4 relative">
                 <Item>
                     <input
