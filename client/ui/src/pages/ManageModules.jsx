@@ -1,202 +1,211 @@
-import { ArrowDownIcon, ArrowPathIcon, TrashIcon, MagnifyingGlassIcon, BookmarkIcon, CubeIcon } from '@heroicons/react/16/solid';
-import { useContext, useRef, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'preact/hooks';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
-import Item from '../components/Item.jsx';
-import ConfirmModal from '../components/ConfirmModal.jsx';
-import SignInQrCode from '../assets/signInQrCode.png';
+import { useFocusable, setFocus } from '@noriginmedia/norigin-spatial-navigation';
+import { TrashIcon, CubeIcon, PlusIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'preact-iso';
 import { Events } from '../components/WebSocketClient.js';
-import { useEffect } from 'preact/hooks';
-import { setFocus } from '@noriginmedia/norigin-spatial-navigation';
 
-const REPO_NAME_TO_PACKAGE_ID = {
-    tizenbrew:          'xvvl3S1bvH.TizenBrewStandalone',
-    tizenbrewinstaller: 'xvvl3S1bTI.TizenBrewStandalone',
-};
-
-function normalizeRepo(repo) {
-    if (!repo) return '';
-    return repo.trim()
-        .replace(/^https?:\/\/github\.com\//i, '')
-        .replace(/\.git$/i, '')
-        .replace(/^github:/i, '')
-        .replace(/^\/+|\/+$/g, '')
-        .toLowerCase();
-}
-
-function repoLabel(repo) {
-    if (!repo) return 'TizenBrew';
-    const parts = repo.split('/');
-    const last = parts[parts.length - 1];
-    return last.charAt(0).toUpperCase() + last.slice(1);
-}
-
-function getInstalledInfo(repo) {
-    if (typeof tizen === 'undefined') return { installed: false, version: null };
-    const repoName = normalizeRepo(repo).split('/').pop();
-    const pkgId = REPO_NAME_TO_PACKAGE_ID[repoName];
-    if (!pkgId) return { installed: false, version: null };
-    try {
-        const appInfo = tizen.application.getAppInfo(pkgId);
-        return { installed: true, version: appInfo.version };
-    } catch (_) {
-        return { installed: false, version: null };
-    }
-}
-
-function isKnownRepo(repo) {
-    return !!REPO_NAME_TO_PACKAGE_ID[normalizeRepo(repo).split('/').pop()];
-}
-
-export default function Home() {
-    const isTizenApiAvailable = typeof tizen !== 'undefined' && tizen.application && tizen.application.getAppInfo;
-    const context = useContext(GlobalStateContext);
-    const { t } = useTranslation();
-    const loc = useLocation();
-    const didRunRef   = useRef(false);
-    const lastCheckTs = useRef(0);
-    const lastResetTs = useRef(0);
-    const [resetModal, setResetModal] = useState(false);
-
-    if (!isTizenApiAvailable) loc.route('/ui/dist/index.html/desktop');
-
-    const activeRepo = context.state.sharedData.tizenBrewRepo;
-    const label = repoLabel(activeRepo);
-    const { installed, version } = getInstalledInfo(activeRepo);
-
-    const ownPkgId = (() => {
-        try { return tizen.application.getAppInfo().packageId; } catch (_) { return null; }
-    })();
-
+// ─── Module row ───────────────────────────────────────────────────────────────
+function ModuleRow({ mod, focusKey, onRemove }) {
+    const { ref, focused } = useFocusable({
+        focusKey,
+        onEnterPress: onRemove,
+    });
     useEffect(() => {
-        const { client } = context.state;
-        if (client !== null && client.socket && client.socket.readyState === WebSocket.OPEN && !didRunRef.current) {
-            didRunRef.current = true;
-            if (ownPkgId === 'xvvl3S1bTU') {
-                alert(t('installer.installingAgain'));
-                client.send({ type: Events.InstallPackage, payload: { url: 'reisxd/TizenBrewInstaller' } });
-            }
-            try {
-                if (ownPkgId === 'xvvl3S1bTI') {
-                    tizen.application.getAppInfo('xvvl3S1bTU.TizenBrewStandalone');
-                    alert(t('installer.alreadyInstalled'));
-                }
-            } catch (_) {}
+        if (focused) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, [focused]);
+
+    const parts = mod.split('/');
+    const type  = parts[0];
+    const name  = parts.slice(1).join('/');
+
+    return (
+        <div ref={ref} className={[
+            'flex items-center gap-3 rounded-xl px-3 border-2 transition-colors h-16',
+            focused ? 'border-indigo-400 bg-slate-800' : 'border-slate-700 bg-slate-900'
+        ].join(' ')}>
+            <CubeIcon className="h-5 w-5 text-indigo-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+                <p className="text-slate-100 font-mono text-base truncate">{name}</p>
+                <p className="text-slate-500 text-xs">{type}</p>
+            </div>
+            <div onClick={onRemove} className={[
+                'flex items-center justify-center w-10 h-10 rounded-lg bg-red-800 text-white flex-shrink-0 cursor-pointer',
+                focused ? 'ring-2 ring-red-400' : ''
+            ].join(' ')}>
+                <TrashIcon className="h-5 w-5" />
+            </div>
+        </div>
+    );
+}
+
+// ─── Add row ──────────────────────────────────────────────────────────────────
+function AddRow({ onAdd, inputRef: externalInputRef, onSubmitRef }) {
+    const exampleModule = 'npm/@foxreis/tizentube';
+    const [value, setValue] = useState(exampleModule);
+    const confirmedRef = useRef(false);
+    const { t } = useTranslation();
+
+    const { ref: wrapRef, focused } = useFocusable({
+        focusKey: 'add-module-input',
+        onEnterPress: () => externalInputRef.current?.focus(),
+    });
+
+    function submit() {
+        const trimmed = value.trim();
+        if (!trimmed) return;
+        onAdd(trimmed);
+        setValue('');
+    }
+
+    if (onSubmitRef) onSubmitRef.current = submit;
+
+    function handleKeyDown(e) {
+        if (e.keyCode === 37 || e.keyCode === 39) e.stopPropagation();
+        if (e.keyCode === 38 || e.keyCode === 40) { externalInputRef.current?.blur(); return; }
+        if (e.keyCode === 13 || e.keyCode === 65376 || e.keyCode === 404) {
+            e.preventDefault?.();
+            e.stopPropagation?.();
+            confirmedRef.current = true;
+            externalInputRef.current?.blur();
         }
-    }, [context.state.client]);
-
-    function handleCheck() {
-        const now = Date.now();
-        if (now - lastCheckTs.current < 1000) return;
-        lastCheckTs.current = now;
-        context.state.client.send({ type: Events.CheckTizenBrewConfig });
     }
 
-    function handleResetRequest() {
-        const now = Date.now();
-        if (now - lastResetTs.current < 1000) return;
-        lastResetTs.current = now;
-        setResetModal(true);
-    }
-
-    function handleResetConfirm() {
-        setResetModal(false);
-        context.state.client.send({ type: Events.ResetTizenBrewConfig });
-        // Return focus to the reset card
-        setTimeout(() => setFocus('home-card-reset'), 80);
-    }
-
-    function handleResetCancel() {
-        setResetModal(false);
-        setTimeout(() => setFocus('home-card-reset'), 50);
+    function handleBlur() {
+        if (confirmedRef.current) { confirmedRef.current = false; submit(); }
     }
 
     return (
-        <div className="relative isolate lg:px-8 pt-6">
-            {resetModal && (
-                <ConfirmModal
-                    message={t('tizenBrewConfig.resetConfirm')}
-                    onConfirm={handleResetConfirm}
-                    onCancel={handleResetCancel}
+        <div className="flex flex-col gap-2 rounded-xl border-2 border-indigo-700 bg-slate-900 px-4 py-3 mt-2">
+            <p className="text-indigo-300 font-semibold text-sm">{t('tbModules.addTitle')}</p>
+            <p className="text-slate-500 text-xs">{t('tbModules.addHint')}</p>
+            <div
+                ref={wrapRef}
+                className={[
+                    'flex items-center gap-2 rounded-lg border-2 px-3 py-2 bg-slate-800 cursor-pointer transition-all',
+                    focused ? 'border-indigo-400 ring-2 ring-indigo-300' : 'border-slate-600'
+                ].join(' ')}
+                onClick={() => externalInputRef.current?.focus()}
+            >
+                <input
+                    ref={externalInputRef}
+                    type="text"
+                    value={value}
+                    placeholder={`${t('tbModules.inputPlaceholder')} (e.g. ${exampleModule})`}
+                    className="flex-1 bg-transparent text-slate-100 text-sm font-mono outline-none"
+                    onChange={e => setValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onBlur={handleBlur}
+                    onFocus={e => e.target.select()}
                 />
+            </div>
+            {value.trim() && (
+                <p className="text-slate-500 text-xs font-mono">→ <span className="text-indigo-300">{value.trim()}</span></p>
             )}
+            <AddButton onSubmit={submit} label={t('tbModules.addButton')} />
+        </div>
+    );
+}
 
-            {context.state.sharedData.qrCodeShow && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                    <div className="p-8 rounded-2xl shadow-2xl max-w-full">
-                        <h3 className="text-3xl font-bold mb-4">{t('resigning.resigningRequired')}</h3>
-                        <p className="text-xl mb-4 whitespace-pre">{t('resigning.resigningRequiredDesc')}</p>
-                        <img src={SignInQrCode} alt="Sign In QR Code" className="mt-2 w-80 h-80 max-w-full max-h-[60vw] object-contain mx-auto border-8 rounded-lg" />
-                        <p className="mt-4 text-lg">{t('resigning.resigningRequiredAccessInfo', { ip: webapis.network.getIp() })}</p>
-                        <p className="mt-4 text-lg">{t('resigning.resigningDeviceSameNetwork')}</p>
-                    </div>
-                </div>
-            )}
+function AddButton({ onSubmit, label }) {
+    const { ref, focused } = useFocusable({ focusKey: 'add-module-btn', onEnterPress: onSubmit });
+    return (
+        <div ref={ref} onClick={onSubmit} className={[
+            'flex items-center justify-center gap-2 px-4 py-2 rounded-lg',
+            'bg-indigo-600 text-white font-semibold text-sm cursor-pointer',
+            focused ? 'ring-2 ring-white' : ''
+        ].join(' ')}>
+            <PlusIcon className="h-5 w-5" />{label}
+        </div>
+    );
+}
 
-            <div className="mx-auto flex flex-wrap justify-center gap-x-2 top-4 relative">
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function ManageModules() {
+    const { state }  = useContext(GlobalStateContext);
+    const { t }      = useTranslation();
+    const modules    = state.sharedData.tbModules ?? [];
+    const addInputRef  = useRef(null);
+    const addSubmitRef = useRef(null);
+    const greenStateRef = useRef('idle'); // 'idle' | 'keyboard_open'
 
-                <Item focusKey="home-card-install" upFocusKey="sn:focusable-item-1" onClick={() => {
-                    context.state.client.send({ type: Events.InstallPackage, payload: { url: activeRepo } });
-                }}>
-                    <h3 className='text-indigo-400 text-base/7 font-semibold'>
-                        {installed ? (
-                            <span className='flex items-center gap-2'><ArrowPathIcon className='h-8 w-8 text-indigo-400' />{t('installer.update', { label })}</span>
-                        ) : (
-                            <span className='flex items-center gap-2'><ArrowDownIcon className='h-8 w-8 text-indigo-400' />{t('installer.install', { label })}</span>
-                        )}
-                    </h3>
-                    <p className="mt-2 text-sm text-slate-300 break-all">Repo: {activeRepo}</p>
-                    {installed && version && <p className="text-sm text-slate-300">{t('installer.installedVersion', { version })}</p>}
-                    {!isKnownRepo(activeRepo) && <p className="text-xs text-slate-500 mt-1">{t('installer.versionUnknown')}</p>}
-                </Item>
+    // FIX: guard against client being null when the component first mounts
+    useEffect(() => {
+        if (!state.client) return;
+        state.client.send({ type: Events.GetTBModules });
+        setTimeout(() => setFocus(modules.length > 0 ? 'module-row-0' : 'add-module-input'), 100);
+    }, [state.client]);
 
-                <Item focusKey="home-card-usb" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-usb')}>
-                    <h3 className='text-indigo-400 text-base/7 font-semibold'>
-                        <span className='flex items-center gap-2'><ArrowDownIcon className='h-8 w-8 text-indigo-400' />{t('installer.installFromUSB')}</span>
-                    </h3>
-                </Item>
+    useEffect(() => {
+        setTimeout(() => setFocus(modules.length > 0 ? 'module-row-0' : 'add-module-input'), 50);
+    }, [modules.length]);
 
-                <Item focusKey="home-card-gh" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-gh')}>
-                    <h3 className='text-indigo-400 text-base/7 font-semibold'>
-                        <span className='flex items-center gap-2'><ArrowDownIcon className='h-8 w-8 text-indigo-400' />{t('installer.installFromGH')}</span>
-                    </h3>
-                </Item>
+    useEffect(() => {
+        function onKeyDown(e) {
+            if (e.keyCode !== 404) return;
+            e.preventDefault();
+            e.stopPropagation();
 
-                <Item focusKey="home-card-saved" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/saved-repos')}>
-                    <h3 className='text-violet-400 text-base/7 font-semibold'>
-                        <span className='flex items-center gap-2'><BookmarkIcon className='h-8 w-8 text-violet-400' />{t('savedRepos.button')}</span>
-                    </h3>
-                    <p className="mt-2 text-sm text-slate-400">{t('savedRepos.desc', { count: context.state.sharedData.repoList.length })}</p>
-                    <p className="mt-1 text-xs text-slate-500 break-all">{t('savedRepos.active')}: {activeRepo}</p>
-                </Item>
+            if (greenStateRef.current === 'keyboard_open') {
+                // Second press — submit and reset state
+                greenStateRef.current = 'idle';
+                addSubmitRef.current?.();
+            } else {
+                // First press — open keyboard
+                greenStateRef.current = 'keyboard_open';
+                setFocus('add-module-input');
+                setTimeout(() => addInputRef.current?.focus(), 50);
+            }
+        }
 
-                {isTizenApiAvailable && (
-                    <Item focusKey="home-card-modules" onClick={() => loc.route('/ui/dist/index.html/manage-modules')}>
-                        <h3 className='text-indigo-300 text-base/7 font-semibold'>
-                            <span className='flex items-center gap-2'><CubeIcon className='h-8 w-8 text-indigo-300' />{t('tbModules.homeButton')}</span>
-                        </h3>
-                        <p className="mt-2 text-sm text-slate-400">{t('tbModules.homeDesc')}</p>
-                    </Item>
-                )}
+        // Reset toggle when input closes (blur), so state stays consistent
+        // if user dismisses the keyboard with Back instead of Green.
+        function onInputBlur() {
+            setTimeout(() => {
+                if (greenStateRef.current === 'keyboard_open') {
+                    greenStateRef.current = 'idle';
+                }
+            }, 100);
+        }
 
-                {isTizenApiAvailable && (
-                    <Item focusKey="home-card-check" onClick={handleCheck}>
-                        <h3 className='text-sky-400 text-base/7 font-semibold'>
-                            <span className='flex items-center gap-2'><MagnifyingGlassIcon className='h-8 w-8 text-sky-400' />{t('tizenBrewConfig.checkButton')}</span>
-                        </h3>
-                        <p className="mt-2 text-sm text-slate-400">{t('tizenBrewConfig.checkDesc')}</p>
-                    </Item>
-                )}
+        window.addEventListener('keydown', onKeyDown, true);
+        const inputEl = addInputRef.current;
+        if (inputEl) inputEl.addEventListener('blur', onInputBlur);
+        return () => {
+            window.removeEventListener('keydown', onKeyDown, true);
+            if (inputEl) inputEl.removeEventListener('blur', onInputBlur);
+        };
+    }, []);
 
-                {isTizenApiAvailable && (
-                    <Item focusKey="home-card-reset" onClick={handleResetRequest}>
-                        <h3 className='text-red-400 text-base/7 font-semibold'>
-                            <span className='flex items-center gap-2'><TrashIcon className='h-8 w-8 text-red-400' />{t('tizenBrewConfig.resetButton')}</span>
-                        </h3>
-                        <p className="mt-2 text-sm text-slate-400">{t('tizenBrewConfig.resetDesc')}</p>
-                    </Item>
-                )}
+    function addModule(m)    { if (state.client) state.client.send({ type: Events.AddTBModule,    payload: { module: m } }); }
+    function removeModule(m) { if (state.client) state.client.send({ type: Events.RemoveTBModule, payload: { module: m } }); }
+
+    return (
+        <div className="flex flex-col items-center px-4 pt-4 overflow-y-auto" style={{ maxHeight: 'calc(92vh - 8vh)' }}>
+            <h1 className="text-2xl font-bold text-indigo-400 mb-1 text-center w-full">{t('tbModules.pageTitle')}</h1>
+            <p className="text-slate-400 text-sm mb-1 text-center">{t('tbModules.pageDesc')}</p>
+            <p className="text-slate-600 text-xs mb-3 text-center">🟢 {t('tbModules.greenHint')}</p>
+
+            <div className="w-full max-w-2xl flex flex-col gap-2">
+                {modules.length === 0
+                    ? <p className="text-slate-500 text-center py-6 text-base">{t('tbModules.empty')}</p>
+                    : modules.map((mod, i) => (
+                        <ModuleRow key={mod} mod={mod} focusKey={`module-row-${i}`} onRemove={() => removeModule(mod)} />
+                    ))
+                }
+                <AddRow onAdd={addModule} inputRef={addInputRef} onSubmitRef={addSubmitRef} />
+            </div>
+
+            <div className="mt-4 mb-2 w-full max-w-2xl">
+                <p className="text-slate-400 text-sm text-center mb-1">
+                    {t('tbModules.greenKey')}
+                </p>
+                <p className="text-slate-500 text-xs text-center mb-1">
+                    {t('tbModules.navHint1')}
+                </p>
+                <p className="text-slate-500 text-xs text-center">
+                    {t('tbModules.navHint2')}
+                </p>
             </div>
         </div>
     );

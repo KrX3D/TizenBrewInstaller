@@ -10,7 +10,7 @@ function ModalButton({ children, onClick, focusKey, autoFocus }) {
             ref={ref}
             onClick={onClick}
             className={[
-                'px-12 py-5 rounded-2xl text-2xl font-semibold transition-all min-w-[10vw]',
+                'px-8 py-3 rounded-xl text-xl font-semibold transition-all min-w-[8vw]',
                 focused
                     ? 'bg-indigo-500 text-white focus'
                     : 'bg-slate-700 text-slate-200'
@@ -21,14 +21,6 @@ function ModalButton({ children, onClick, focusKey, autoFocus }) {
     );
 }
 
-/**
- * Props:
- *   message    string  — question, \n splits into sub-line
- *   onConfirm  fn
- *   onCancel   fn
- *
- * Does NOT restore focus on unmount — caller handles that.
- */
 export default function ConfirmModal({ message, onConfirm, onCancel }) {
     const { t } = useTranslation();
 
@@ -47,17 +39,14 @@ export default function ConfirmModal({ message, onConfirm, onCancel }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-slate-800 rounded-2xl shadow-2xl px-14 py-12 max-w-[65vw] min-w-[38vw] flex flex-col items-center border border-slate-600"
-                 style={{ gap: '3vh' }}>
-                {/* Text block */}
-                <div className="text-center" style={{ paddingBottom: '1vh' }}>
+            <div className="bg-slate-800 rounded-2xl shadow-2xl px-12 py-10 max-w-[60vw] min-w-[35vw] flex flex-col items-center gap-8 border border-slate-600">
+                <div className="text-center">
                     <p className="text-white text-2xl leading-relaxed">{mainLine}</p>
                     {subLines.map((line, i) => (
                         <p key={i} className="text-slate-400 text-lg mt-3 font-mono break-all">{line}</p>
                     ))}
                 </div>
-                {/* Button row */}
-                <div className="flex" style={{ gap: '4vw' }}>
+                <div className="flex gap-6">
                     <ModalButton focusKey="modal-cancel" autoFocus onClick={onCancel}>
                         {t('modal.cancel')}
                     </ModalButton>
