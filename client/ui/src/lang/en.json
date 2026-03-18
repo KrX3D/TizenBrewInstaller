@@ -43,6 +43,7 @@
         "checkDesc": "Check if tizenbrewConfig.json exists and its permissions.",
         "resetButton": "Reset TB Config",
         "resetDesc": "Delete tizenbrewConfig.json — TizenBrew will recreate it on next launch.",
+        "resetConfirm": "Delete tizenbrewConfig.json?\nTizenBrew will recreate it on next launch.",
         "notFound": "tizenbrewConfig.json was not found.",
         "fileInfo": "tizenbrewConfig.json\nSize: {{sizeKb}} KB  •  Permissions: {{permStr}}\nLast modified: {{mtime}}",
         "readable": "readable",
@@ -52,6 +53,10 @@
         "resetSuccess": "tizenbrewConfig.json deleted successfully.",
         "permissionDenied": "Cannot delete tizenbrewConfig.json — permission denied.",
         "resetError": "Failed to delete tizenbrewConfig.json: {{error}}"
+    },
+    "modal": {
+        "ok": "OK",
+        "cancel": "Cancel"
     },
     "savedRepos": {
         "button": "Saved Repos",
@@ -78,7 +83,9 @@
         "removeSuccess": "Module removed.",
         "removeError": "Failed to remove module: {{error}}",
         "loadError": "Could not load modules: {{error}}",
-        "hint": "Navigate to input row and press OK to open keyboard  |  OK on module row = remove"
+        "greenKey": "GREEN key: open keyboard / submit module",
+        "navHint1": "Navigate to input row, press OK or GREEN to open keyboard",
+        "navHint2": "OK on a module row = remove module"
     },
     "__contributors": [
         "reisxd"

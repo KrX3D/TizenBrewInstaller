@@ -1,12 +1,14 @@
 import { ArrowDownIcon, ArrowPathIcon, TrashIcon, MagnifyingGlassIcon, BookmarkIcon, CubeIcon } from '@heroicons/react/16/solid';
-import { useContext, useRef } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import Item from '../components/Item.jsx';
+import ConfirmModal from '../components/ConfirmModal.jsx';
 import SignInQrCode from '../assets/signInQrCode.png';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'preact-iso';
 import { Events } from '../components/WebSocketClient.js';
 import { useEffect } from 'preact/hooks';
+import { setFocus } from '@noriginmedia/norigin-spatial-navigation';
 
 const REPO_NAME_TO_PACKAGE_ID = {
     tizenbrew:          'xvvl3S1bvH.TizenBrewStandalone',
@@ -55,6 +57,7 @@ export default function Home() {
     const didRunRef   = useRef(false);
     const lastCheckTs = useRef(0);
     const lastResetTs = useRef(0);
+    const [resetModal, setResetModal] = useState(false);
 
     if (!isTizenApiAvailable) loc.route('/ui/dist/index.html/desktop');
 
@@ -87,20 +90,38 @@ export default function Home() {
         const now = Date.now();
         if (now - lastCheckTs.current < 1000) return;
         lastCheckTs.current = now;
-        // Only send CheckTizenBrewConfig — CheckConfigurationAccess is about the
-        // installer cert file and its "not found" toast confuses the user here.
         context.state.client.send({ type: Events.CheckTizenBrewConfig });
     }
 
-    function handleReset() {
+    function handleResetRequest() {
         const now = Date.now();
         if (now - lastResetTs.current < 1000) return;
         lastResetTs.current = now;
+        setResetModal(true);
+    }
+
+    function handleResetConfirm() {
+        setResetModal(false);
         context.state.client.send({ type: Events.ResetTizenBrewConfig });
+        // Return focus to the reset card
+        setTimeout(() => setFocus('home-card-reset'), 80);
+    }
+
+    function handleResetCancel() {
+        setResetModal(false);
+        setTimeout(() => setFocus('home-card-reset'), 50);
     }
 
     return (
         <div className="relative isolate lg:px-8 pt-6">
+            {resetModal && (
+                <ConfirmModal
+                    message={t('tizenBrewConfig.resetConfirm')}
+                    onConfirm={handleResetConfirm}
+                    onCancel={handleResetCancel}
+                />
+            )}
+
             {context.state.sharedData.qrCodeShow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
                     <div className="p-8 rounded-2xl shadow-2xl max-w-full">
@@ -112,7 +133,8 @@ export default function Home() {
                     </div>
                 </div>
             )}
-            <div className="mx-auto flex flex-wrap justify-center gap-4 top-4 relative">
+
+            <div className="mx-auto flex flex-wrap justify-center gap-x-2 top-4 relative">
 
                 <Item focusKey="home-card-install" upFocusKey="sn:focusable-item-1" onClick={() => {
                     context.state.client.send({ type: Events.InstallPackage, payload: { url: activeRepo } });
@@ -168,7 +190,7 @@ export default function Home() {
                 )}
 
                 {isTizenApiAvailable && (
-                    <Item focusKey="home-card-reset" onClick={handleReset}>
+                    <Item focusKey="home-card-reset" onClick={handleResetRequest}>
                         <h3 className='text-red-400 text-base/7 font-semibold'>
                             <span className='flex items-center gap-2'><TrashIcon className='h-8 w-8 text-red-400' />{t('tizenBrewConfig.resetButton')}</span>
                         </h3>
