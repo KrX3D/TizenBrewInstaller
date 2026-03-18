@@ -100,7 +100,7 @@ export default function Home() {
     }
 
     return (
-        <div className="relative isolate lg:px-8">
+        <div className="relative isolate lg:px-8 pt-6">
             {context.state.sharedData.qrCodeShow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
                     <div className="p-8 rounded-2xl shadow-2xl max-w-full">
