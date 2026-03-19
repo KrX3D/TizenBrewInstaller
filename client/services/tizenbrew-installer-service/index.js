@@ -12,8 +12,6 @@ module.exports.onStart = function () {
         readConfig,
         writeConfig,
         deleteConfig,
-        canActuallyWriteConfig,
-        canActuallyDeleteConfig,
         tryFixConfigPermissions
     } = require('./utils/configuration.js');
     const { fetchLatestRelease } = require('./utils/GitHubAPI.js');

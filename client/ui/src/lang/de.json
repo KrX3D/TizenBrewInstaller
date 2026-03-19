@@ -38,18 +38,6 @@
         "sdbConnectionRefused": "Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Stelle sicher, dass der Fernseher eingeschaltet ist und die IP-Adresse korrekt ist.",
         "sdbConnectionReset": "Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Entweder wurde die Host-PC-IP nicht auf die IP dieses Geräts gesetzt, oder der Fernseher wurde nicht korrekt neu gestartet. Halte die Ein/Aus-Taste gedrückt, bis das Samsung-Logo erscheint."
     },
-    "configAccess": {
-        "notFound": "Konfigurationsdatei nicht gefunden.",
-        "header": "Konfig-Zugriffsprüfung:",
-        "write": "Schreiben: {{value}}",
-        "delete": "Löschen: {{value}}",
-        "yes": "ja",
-        "no": "nein",
-        "fixSuccess": "Korrekturversuch: erfolgreich",
-        "fixFailed": "Korrekturversuch: fehlgeschlagen",
-        "fixReason": "Grund: {{reason}}",
-        "sandboxWarning": "Die Datei kann durch Eigentümer- / App-Sandbox-Einschränkungen weiterhin gesperrt sein."
-    },
     "savedRepos": {
         "button": "Gespeicherte Repos",
         "desc": "{{count}} gespeichertes Repo(s)",

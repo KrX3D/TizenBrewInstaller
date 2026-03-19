@@ -35,12 +35,4 @@ window.addEventListener('keydown', (e) => {
     }
 }, true);
 
-// Register colour buttons so the TV routes them to the app
-try {
-    tizen.tvinputdevice.registerKey('ColorF1Green');   // keyCode 404 — used in ManageModules
-    tizen.tvinputdevice.registerKey('ColorF0Red');     // 403
-    tizen.tvinputdevice.registerKey('ColorF2Yellow');  // 405
-    tizen.tvinputdevice.registerKey('ColorF3Blue');    // 406
-} catch (_) {}
-
 render(<GlobalStateProvider><App /></GlobalStateProvider>, document.getElementById('app'));

@@ -38,18 +38,6 @@
         "sdbConnectionRefused": "Could not connect to the SDB Daemon. Make sure that the TV is on and that the IP is correct.",
         "sdbConnectionReset": "Could not connect to the SDB Daemon. Either you haven't set the Host PC IP to this device's IP, or you didn't restart the TV properly. Hold the power button till you see the Samsung logo to restart the TV."
     },
-    "configAccess": {
-        "notFound": "Configuration file not found.",
-        "header": "Config access check:",
-        "write": "Write: {{value}}",
-        "delete": "Delete: {{value}}",
-        "yes": "yes",
-        "no": "no",
-        "fixSuccess": "Fix attempt: success",
-        "fixFailed": "Fix attempt: failed",
-        "fixReason": "Reason: {{reason}}",
-        "sandboxWarning": "The file may still be blocked by owner / app sandbox restrictions."
-    },
     "savedRepos": {
         "button": "Saved Repos",
         "desc": "{{count}} saved repo(s)",

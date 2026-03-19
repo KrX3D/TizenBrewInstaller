@@ -40,18 +40,6 @@
         "sdbConnectionRefused": "Không thể kết nối đến SDB Daemon. Hãy đảm bảo TV đang bật và địa chỉ IP chính xác.",
         "sdbConnectionReset": "Không thể kết nối đến SDB Daemon. Bạn chưa đặt Host PC IP thành IP của thiết bị này, hoặc chưa khởi động lại TV đúng cách. Giữ nút nguồn cho đến khi logo Samsung hiển thị."
     },
-    "configAccess": {
-        "notFound": "Không tìm thấy tệp cấu hình.",
-        "header": "Kiểm tra quyền truy cập cấu hình:",
-        "write": "Ghi: {{value}}",
-        "delete": "Xóa: {{value}}",
-        "yes": "có",
-        "no": "không",
-        "fixSuccess": "Thử sửa: thành công",
-        "fixFailed": "Thử sửa: thất bại",
-        "fixReason": "Lý do: {{reason}}",
-        "sandboxWarning": "Tệp có thể vẫn bị chặn bởi giới hạn chủ sở hữu / sandbox ứng dụng."
-    },
     "savedRepos": {
         "button": "Repo đã lưu",
         "desc": "{{count}} repo đã lưu",

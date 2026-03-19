@@ -40,18 +40,6 @@
         "sdbConnectionRefused": "Kan geen verbinding maken met de SDB Daemon. Zorg ervoor dat de TV aan staat en het IP-adres correct is.",
         "sdbConnectionReset": "Kan geen verbinding maken met de SDB Daemon. U hebt de Host PC IP mogelijk niet ingesteld op het IP van dit apparaat, of de TV niet correct opnieuw opgestart. Houd de aan/uit-knop ingedrukt tot het Samsung-logo verschijnt."
     },
-    "configAccess": {
-        "notFound": "Configuratiebestand niet gevonden.",
-        "header": "Toegangscontrole configuratie:",
-        "write": "Schrijven: {{value}}",
-        "delete": "Verwijderen: {{value}}",
-        "yes": "ja",
-        "no": "nee",
-        "fixSuccess": "Herstelpoging: geslaagd",
-        "fixFailed": "Herstelpoging: mislukt",
-        "fixReason": "Reden: {{reason}}",
-        "sandboxWarning": "Het bestand kan nog steeds worden geblokkeerd door eigenaar- of app-sandbox-beperkingen."
-    },
     "savedRepos": {
         "button": "Opgeslagen repos",
         "desc": "{{count}} opgeslagen repo('s)",

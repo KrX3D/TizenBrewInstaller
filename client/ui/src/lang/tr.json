@@ -40,18 +40,6 @@
         "sdbConnectionRefused": "SDB Daemon'a bağlanılamadı. TV'nin açık olduğundan ve IP'nin doğru olduğundan emin olun.",
         "sdbConnectionReset": "SDB Daemon'a bağlanılamadı. Ya Host PC IP'sini bu cihazın IP'si olarak ayarlamadınız ya da TV'yi düzgün bir şekilde yeniden başlatmadınız. TV'yi yeniden başlatmak için Samsung logosunu görene kadar güç düğmesini basılı tutun."
     },
-    "configAccess": {
-        "notFound": "Yapılandırma dosyası bulunamadı.",
-        "header": "Yapılandırma erişim kontrolü:",
-        "write": "Yazma: {{value}}",
-        "delete": "Silme: {{value}}",
-        "yes": "evet",
-        "no": "hayır",
-        "fixSuccess": "Düzeltme girişimi: başarılı",
-        "fixFailed": "Düzeltme girişimi: başarısız",
-        "fixReason": "Neden: {{reason}}",
-        "sandboxWarning": "Dosya, sahip/uygulama sandbox kısıtlamaları nedeniyle hâlâ engellenmiş olabilir."
-    },
     "savedRepos": {
         "button": "Kayıtlı Repolar",
         "desc": "{{count}} kayıtlı repo",
