@@ -13,6 +13,7 @@ import {
     fetchLatestVersion,
     isUpdateAvailable
 } from '../utils/versionInfo.js';
+import { PKG, PKG_ID } from '../utils/knownApps.js';
 
 export default function Home() {
     const isTizenApiAvailable = typeof tizen !== 'undefined' && tizen.application && tizen.application.getAppInfo;
@@ -50,13 +51,13 @@ export default function Home() {
         const { client } = context.state;
         if (client !== null && client.socket && client.socket.readyState === WebSocket.OPEN && !didRunRef.current) {
             didRunRef.current = true;
-            if (ownPkgId === 'xvvl3S1bTU') {
+            if (ownPkgId === PKG_ID.TIZENBREW_USB_DEMO) {
                 alert(t('installer.installingAgain'));
                 client.send({ type: Events.InstallPackage, payload: { url: 'reisxd/TizenBrewInstaller' } });
             }
             try {
-                if (ownPkgId === 'xvvl3S1bTI') {
-                    tizen.application.getAppInfo('xvvl3S1bTU.TizenBrewStandalone');
+                if (ownPkgId === PKG_ID.TIZENBREW_INSTALLER) {
+                    tizen.application.getAppInfo(PKG.TIZENBREW_USB_DEMO);
                     alert(t('installer.alreadyInstalled'));
                 }
             } catch (_) {}
