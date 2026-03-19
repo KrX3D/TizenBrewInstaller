@@ -1,6 +1,5 @@
-// Shared utilities for fetching GitHub release versions and checking installed state.
-
-export { REPO_NAME_TO_PACKAGE_ID } from './knownApps.js';
+import { REPO_NAME_TO_PACKAGE_ID } from './knownApps.js';
+export { REPO_NAME_TO_PACKAGE_ID };
 
 export function normalizeRepo(repo) {
     if (!repo) return '';
@@ -14,8 +13,8 @@ export function normalizeRepo(repo) {
 
 export function repoLabel(repo) {
     if (!repo) return 'TizenBrew';
-    const parts = repo.split('/');
-    const last = parts[parts.length - 1];
+    var parts = repo.split('/');
+    var last = parts[parts.length - 1];
     return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
@@ -25,9 +24,9 @@ export function isKnownRepo(repo) {
 
 export function getInstalledVersion(repo) {
     if (typeof tizen === 'undefined') return null;
-    const repoName = normalizeRepo(repo).split('/').pop();
-    const pkgId = REPO_NAME_TO_PACKAGE_ID[repoName];
-    if (!pkgId) return null; // Unknown app — can't check installed state
+    var repoName = normalizeRepo(repo).split('/').pop();
+    var pkgId = REPO_NAME_TO_PACKAGE_ID[repoName];
+    if (!pkgId) return null;
     try {
         return tizen.application.getAppInfo(pkgId).version;
     } catch (_) {
@@ -35,45 +34,43 @@ export function getInstalledVersion(repo) {
     }
 }
 
-export async function fetchLatestVersion(repo) {
-    try {
-        const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`);
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data.tag_name ? data.tag_name.replace(/^v/, '') : null;
-    } catch (_) {
-        return null;
-    }
+export function fetchLatestVersion(repo) {
+    return fetch('https://api.github.com/repos/' + repo + '/releases/latest')
+        .then(function(res) {
+            if (!res.ok) return null;
+            return res.json();
+        })
+        .then(function(data) {
+            if (!data) return null;
+            return data.tag_name ? data.tag_name.replace(/^v/, '') : null;
+        })
+        .catch(function() { return null; });
 }
 
-// Returns true if latestVersion is strictly newer than installedVersion.
-// Compares dot-separated numeric segments.
 export function isUpdateAvailable(installedVersion, latestVersion) {
     if (!installedVersion || !latestVersion) return false;
-    const a = installedVersion.split('.').map(Number);
-    const b = latestVersion.split('.').map(Number);
-    const len = Math.max(a.length, b.length);
-    for (let i = 0; i < len; i++) {
-        const av = a[i] || 0;
-        const bv = b[i] || 0;
+    var a = installedVersion.split('.').map(Number);
+    var b = latestVersion.split('.').map(Number);
+    var len = Math.max(a.length, b.length);
+    for (var i = 0; i < len; i++) {
+        var av = a[i] || 0;
+        var bv = b[i] || 0;
         if (bv > av) return true;
         if (bv < av) return false;
     }
     return false;
 }
 
-// Fetch version info for a list of repos in parallel.
-// Returns array of { repo, latestVersion, installedVersion, updateAvailable }
-export async function fetchAllVersionInfo(repoList) {
-    const results = await Promise.all(repoList.map(async repo => {
-        const latestVersion = await fetchLatestVersion(repo);
-        const installedVersion = getInstalledVersion(repo);
-        return {
-            repo,
-            latestVersion,
-            installedVersion,
-            updateAvailable: isUpdateAvailable(installedVersion, latestVersion)
-        };
+export function fetchAllVersionInfo(repoList) {
+    return Promise.all(repoList.map(function(repo) {
+        return fetchLatestVersion(repo).then(function(latestVersion) {
+            var installedVersion = getInstalledVersion(repo);
+            return {
+                repo: repo,
+                latestVersion: latestVersion,
+                installedVersion: installedVersion,
+                updateAvailable: isUpdateAvailable(installedVersion, latestVersion)
+            };
+        });
     }));
-    return results;
 }
