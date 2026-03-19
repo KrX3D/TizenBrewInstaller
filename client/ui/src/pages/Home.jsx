@@ -1,51 +1,18 @@
 import { ArrowDownIcon, ArrowPathIcon, BookmarkIcon } from '@heroicons/react/16/solid';
-import { useContext, useRef } from 'react';
+import { useContext, useRef, useState, useEffect } from 'preact/hooks';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import Item from '../components/Item.jsx';
 import SignInQrCode from '../assets/signInQrCode.png';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'preact-iso';
 import { Events } from '../components/WebSocketClient.js';
-import { useEffect } from 'preact/hooks';
-
-const REPO_NAME_TO_PACKAGE_ID = {
-    tizenbrew:          'xvvl3S1bvH.TizenBrewStandalone',
-    tizenbrewinstaller: 'xvvl3S1bTI.TizenBrewStandalone',
-};
-
-function normalizeRepo(repo) {
-    if (!repo) return '';
-    return repo.trim()
-        .replace(/^https?:\/\/github\.com\//i, '')
-        .replace(/\.git$/i, '')
-        .replace(/^github:/i, '')
-        .replace(/^\/+|\/+$/g, '')
-        .toLowerCase();
-}
-
-function repoLabel(repo) {
-    if (!repo) return 'TizenBrew';
-    const parts = repo.split('/');
-    const last = parts[parts.length - 1];
-    return last.charAt(0).toUpperCase() + last.slice(1);
-}
-
-function getInstalledInfo(repo) {
-    if (typeof tizen === 'undefined') return { installed: false, version: null };
-    const repoName = normalizeRepo(repo).split('/').pop();
-    const pkgId = REPO_NAME_TO_PACKAGE_ID[repoName];
-    if (!pkgId) return { installed: false, version: null };
-    try {
-        const appInfo = tizen.application.getAppInfo(pkgId);
-        return { installed: true, version: appInfo.version };
-    } catch (_) {
-        return { installed: false, version: null };
-    }
-}
-
-function isKnownRepo(repo) {
-    return !!REPO_NAME_TO_PACKAGE_ID[normalizeRepo(repo).split('/').pop()];
-}
+import {
+    repoLabel,
+    isKnownRepo,
+    getInstalledVersion,
+    fetchLatestVersion,
+    isUpdateAvailable
+} from '../utils/versionInfo.js';
 
 export default function Home() {
     const isTizenApiAvailable = typeof tizen !== 'undefined' && tizen.application && tizen.application.getAppInfo;
@@ -58,7 +25,22 @@ export default function Home() {
 
     const activeRepo = context.state.sharedData.tizenBrewRepo;
     const label = repoLabel(activeRepo);
-    const { installed, version } = getInstalledInfo(activeRepo);
+    const installedVersion = getInstalledVersion(activeRepo);
+    const installed = installedVersion !== null;
+
+    const [latestVersion, setLatestVersion] = useState(null);
+    const [loadingLatest, setLoadingLatest] = useState(false);
+
+    useEffect(() => {
+        if (!activeRepo) return;
+        setLatestVersion(null);
+        setLoadingLatest(true);
+        fetchLatestVersion(activeRepo)
+            .then(v => { setLatestVersion(v); setLoadingLatest(false); })
+            .catch(() => setLoadingLatest(false));
+    }, [activeRepo]);
+
+    const updateAvailable = isUpdateAvailable(installedVersion, latestVersion);
 
     const ownPkgId = (() => {
         try { return tizen.application.getAppInfo().packageId; } catch (_) { return null; }
@@ -101,31 +83,60 @@ export default function Home() {
                 }}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
                         {installed ? (
-                            <span className='flex items-center gap-2'><ArrowPathIcon className='h-8 w-8 text-indigo-400' />{t('installer.update', { label })}</span>
+                            <span className='flex items-center gap-2'>
+                                <ArrowPathIcon className={`h-8 w-8 ${updateAvailable ? 'text-amber-400' : 'text-indigo-400'}`} />
+                                <span className={updateAvailable ? 'text-amber-400' : ''}>{t('installer.update', { label })}</span>
+                            </span>
                         ) : (
-                            <span className='flex items-center gap-2'><ArrowDownIcon className='h-8 w-8 text-indigo-400' />{t('installer.install', { label })}</span>
+                            <span className='flex items-center gap-2'>
+                                <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
+                                {t('installer.install', { label })}
+                            </span>
                         )}
                     </h3>
                     <p className="mt-2 text-sm text-slate-300 break-all">Repo: {activeRepo}</p>
-                    {installed && version && <p className="text-sm text-slate-300">{t('installer.installedVersion', { version })}</p>}
-                    {!isKnownRepo(activeRepo) && <p className="text-xs text-slate-500 mt-1">{t('installer.versionUnknown')}</p>}
+                    {installed && installedVersion && (
+                        <p className="text-sm text-slate-300">
+                            {t('installer.installedVersion', { version: installedVersion })}
+                        </p>
+                    )}
+                    {latestVersion && (
+                        <p className={`text-sm mt-1 ${updateAvailable ? 'text-amber-400 font-semibold' : 'text-slate-400'}`}>
+                            Latest: {latestVersion}{updateAvailable ? ' ⬆ Update available' : installed ? ' ✓ Up to date' : ''}
+                        </p>
+                    )}
+                    {loadingLatest && !latestVersion && (
+                        <p className="text-xs text-slate-500 mt-1">Checking latest version...</p>
+                    )}
+                    {!isKnownRepo(activeRepo) && (
+                        <p className="text-xs text-slate-500 mt-1">{t('installer.versionUnknown')}</p>
+                    )}
                 </Item>
 
                 <Item focusKey="home-card-usb" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-usb')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
-                        <span className='flex items-center gap-2'><ArrowDownIcon className='h-8 w-8 text-indigo-400' />{t('installer.installFromUSB')}</span>
+                        <span className='flex items-center gap-2'>
+                            <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
+                            {t('installer.installFromUSB')}
+                        </span>
                     </h3>
                 </Item>
 
                 <Item focusKey="home-card-gh" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/install-from-gh')}>
                     <h3 className='text-indigo-400 text-base/7 font-semibold'>
-                        <span className='flex items-center gap-2'><ArrowDownIcon className='h-8 w-8 text-indigo-400' />{t('installer.installFromGH')}</span>
+                        <span className='flex items-center gap-2'>
+                            <ArrowDownIcon className='h-8 w-8 text-indigo-400' />
+                            {t('installer.installFromGH')}
+                        </span>
                     </h3>
                 </Item>
 
                 <Item focusKey="home-card-saved" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/saved-repos')}>
                     <h3 className='text-violet-400 text-base/7 font-semibold'>
-                        <span className='flex items-center gap-2'><BookmarkIcon className='h-8 w-8 text-violet-400' />{t('savedRepos.button')}</span>
+                        <span className='flex items-center gap-2'>
+                            <BookmarkIcon className='h-8 w-8 text-violet-400' />
+                            {t('savedRepos.button')}
+                        </span>
                     </h3>
                     <p className="mt-2 text-sm text-slate-400">{t('savedRepos.desc', { count: context.state.sharedData.repoList.length })}</p>
                     <p className="mt-1 text-xs text-slate-500 break-all">{t('savedRepos.active')}: {activeRepo}</p>

@@ -14,6 +14,7 @@ import { ExclamationCircleIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
 import Desktop from './pages/Desktop.jsx';
 import { ToastContainer, useToast, setGlobalToast } from './components/Toast.jsx';
+import { fetchAllVersionInfo } from './utils/versionInfo.js';
 
 export default function App() {
   const headerRef = useRef(null);
@@ -21,6 +22,7 @@ export default function App() {
   const context = useContext(GlobalStateContext);
   const { t } = useTranslation();
   const { toasts, toast } = useToast();
+  const startupToastShownRef = useRef(false);
   window.dispatch = context.dispatch;
   window.state = context.state;
 
@@ -39,6 +41,36 @@ export default function App() {
   useEffect(() => {
     if (!window.setClient) { startService(context); window.setClient = true; }
   }, []);
+
+  // Startup update check — fires once when the client first becomes available
+  useEffect(() => {
+    if (!context.state.client || startupToastShownRef.current) return;
+    startupToastShownRef.current = true;
+
+    const repoList = context.state.sharedData.repoList;
+    if (!repoList || repoList.length === 0) return;
+
+    // Delay slightly so the toast system is fully mounted
+    setTimeout(() => {
+      const t = window.__globalToast;
+      if (!t) return;
+
+      fetchAllVersionInfo(repoList).then(results => {
+        const updatable = results.filter(r => r.updateAvailable);
+        if (updatable.length === 0) return;
+
+        updatable.forEach((r, idx) => {
+          setTimeout(() => {
+            const label = r.repo.split('/').pop();
+            t.info(
+              `⬆ Update available: ${label}\nInstalled: ${r.installedVersion}  →  Latest: ${r.latestVersion}\n${r.repo}`,
+              6000
+            );
+          }, idx * 600);
+        });
+      });
+    }, 1200);
+  }, [context.state.client]);
 
   return (
     <ErrorBoundary>
