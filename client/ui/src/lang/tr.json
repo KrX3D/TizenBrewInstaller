@@ -40,27 +40,6 @@
         "sdbConnectionRefused": "SDB Daemon'a bağlanılamadı. TV'nin açık olduğundan ve IP'nin doğru olduğundan emin olun.",
         "sdbConnectionReset": "SDB Daemon'a bağlanılamadı. Ya Host PC IP'sini bu cihazın IP'si olarak ayarlamadınız ya da TV'yi düzgün bir şekilde yeniden başlatmadınız. TV'yi yeniden başlatmak için Samsung logosunu görene kadar güç düğmesini basılı tutun."
     },
-    "tizenBrewConfig": {
-        "checkButton": "TB Yapılandırmasını Kontrol Et",
-        "checkDesc": "tizenbrewConfig.json'ın var olup olmadığını ve izinlerini kontrol et.",
-        "resetButton": "TB Yapılandırmasını Sıfırla",
-        "resetDesc": "tizenbrewConfig.json'ı sil — TizenBrew bir sonraki başlatmada yeniden oluşturur.",
-        "resetConfirm": "tizenbrewConfig.json silinsin mi?\nTizenBrew bir sonraki başlatmada yeniden oluşturur.",
-        "notFound": "tizenbrewConfig.json bulunamadı.",
-        "fileInfo": "tizenbrewConfig.json\nBoyut: {{sizeKb}} KB  •  İzinler: {{permStr}}\nSon değişiklik: {{mtime}}",
-        "readable": "okunabilir",
-        "writable": "yazılabilir",
-        "noPermissions": "izin yok",
-        "statError": "tizenbrewConfig.json okunamadı: {{error}}",
-        "resetSuccess": "tizenbrewConfig.json başarıyla silindi.",
-        "permissionDenied": "tizenbrewConfig.json silinemiyor — izin reddedildi.",
-        "resetError": "tizenbrewConfig.json silinemedi: {{error}}",
-        "permFix": {
-            "noChange": "İzin düzeltmesi: zaten 0{{mode}} (değişiklik gerekmez)",
-            "applied": "İzin düzeltmesi: uygulandı (0{{before}} → 0{{after}})",
-            "failed": "İzin düzeltmesi: başarısız (sahip/uygulama sandbox kısıtlaması)"
-        }
-    },
     "configAccess": {
         "notFound": "Yapılandırma dosyası bulunamadı.",
         "header": "Yapılandırma erişim kontrolü:",
@@ -73,10 +52,6 @@
         "fixReason": "Neden: {{reason}}",
         "sandboxWarning": "Dosya, sahip/uygulama sandbox kısıtlamaları nedeniyle hâlâ engellenmiş olabilir."
     },
-    "modal": {
-        "ok": "Tamam",
-        "cancel": "İptal"
-    },
     "savedRepos": {
         "button": "Kayıtlı Repolar",
         "desc": "{{count}} kayıtlı repo",
@@ -85,26 +60,6 @@
         "pageDesc": "Aktif hale getirmek için bir repo seçin. Kur / Sil için ◀▶ kullanın.",
         "empty": "Henüz kayıtlı repo yok. Eklemek için GitHub'dan yükleyin.",
         "hint": "◀▶ eylem değiştir  |  OK = onayla  |  ▲▼ repo değiştir"
-    },
-    "tbModules": {
-        "homeButton": "Modülleri Yönet",
-        "homeDesc": "tizenbrewConfig.json dosyasına TizenBrew modülü ekle veya kaldır.",
-        "pageTitle": "Modülleri Yönet",
-        "pageDesc": "Modüller TizenBrew'un bir sonraki başlatılmasında yüklenir.",
-        "empty": "Henüz modül yüklenmedi.",
-        "addTitle": "Modül ekle",
-        "addHint": "Tam modül dizesini girin, örn. npm/@foxreis/tizentube veya gh/reisxd/tizentube",
-        "inputPlaceholder": "npm/@foxreis/tizentube",
-        "addButton": "Modül ekle",
-        "addSuccess": "Modül başarıyla eklendi.",
-        "duplicate": "Bu modül zaten listede.",
-        "addError": "Modül eklenemedi: {{error}}",
-        "removeSuccess": "Modül kaldırıldı.",
-        "removeError": "Modül kaldırılamadı: {{error}}",
-        "loadError": "Modüller yüklenemedi: {{error}}",
-        "greenKey": "YEŞİL tuş: klavyeyi aç / modülü gönder",
-        "navHint1": "Giriş satırına gidin, klavyeyi açmak için OK veya YEŞİL'e basın",
-        "navHint2": "Modül satırında OK = modülü kaldır"
     },
     "__contributors": [
         "reisxd"

@@ -38,27 +38,6 @@
         "sdbConnectionRefused": "Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Stelle sicher, dass der Fernseher eingeschaltet ist und die IP-Adresse korrekt ist.",
         "sdbConnectionReset": "Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Entweder wurde die Host-PC-IP nicht auf die IP dieses Geräts gesetzt, oder der Fernseher wurde nicht korrekt neu gestartet. Halte die Ein/Aus-Taste gedrückt, bis das Samsung-Logo erscheint."
     },
-    "tizenBrewConfig": {
-        "checkButton": "TB-Konfig prüfen",
-        "checkDesc": "Prüfen, ob tizenbrewConfig.json vorhanden ist und ihre Berechtigungen.",
-        "resetButton": "TB-Konfig zurücksetzen",
-        "resetDesc": "tizenbrewConfig.json löschen — TizenBrew erstellt sie beim nächsten Start neu.",
-        "resetConfirm": "tizenbrewConfig.json wirklich löschen?\nTizenBrew erstellt sie beim nächsten Start neu.",
-        "notFound": "tizenbrewConfig.json wurde nicht gefunden.",
-        "fileInfo": "tizenbrewConfig.json\nGröße: {{sizeKb}} KB  •  Berechtigungen: {{permStr}}\nZuletzt geändert: {{mtime}}",
-        "readable": "lesbar",
-        "writable": "schreibbar",
-        "noPermissions": "keine Berechtigungen",
-        "statError": "tizenbrewConfig.json konnte nicht gelesen werden: {{error}}",
-        "resetSuccess": "tizenbrewConfig.json erfolgreich gelöscht.",
-        "permissionDenied": "tizenbrewConfig.json kann nicht gelöscht werden — Zugriff verweigert.",
-        "resetError": "tizenbrewConfig.json konnte nicht gelöscht werden: {{error}}",
-        "permFix": {
-            "noChange": "Berechtigungskorrektur: bereits bei 0{{mode}} (keine Änderung nötig)",
-            "applied": "Berechtigungskorrektur: angewendet (0{{before}} → 0{{after}})",
-            "failed": "Berechtigungskorrektur: fehlgeschlagen (Eigentümer/Sandbox-Einschränkung)"
-        }
-    },
     "configAccess": {
         "notFound": "Konfigurationsdatei nicht gefunden.",
         "header": "Konfig-Zugriffsprüfung:",
@@ -71,10 +50,6 @@
         "fixReason": "Grund: {{reason}}",
         "sandboxWarning": "Die Datei kann durch Eigentümer- / App-Sandbox-Einschränkungen weiterhin gesperrt sein."
     },
-    "modal": {
-        "ok": "OK",
-        "cancel": "Abbrechen"
-    },
     "savedRepos": {
         "button": "Gespeicherte Repos",
         "desc": "{{count}} gespeichertes Repo(s)",
@@ -83,26 +58,6 @@
         "pageDesc": "Repo auswählen zum Aktivieren. ◀▶ für Installieren / Löschen.",
         "empty": "Noch keine gespeicherten Repos. Von GitHub installieren, um eines hinzuzufügen.",
         "hint": "◀▶ Aktion wechseln  |  OK = bestätigen  |  ▲▼ Repo wechseln"
-    },
-    "tbModules": {
-        "homeButton": "Module verwalten",
-        "homeDesc": "TizenBrew-Module in tizenbrewConfig.json hinzufügen oder entfernen.",
-        "pageTitle": "Module verwalten",
-        "pageDesc": "Module werden beim nächsten TizenBrew-Start geladen.",
-        "empty": "Noch keine Module installiert.",
-        "addTitle": "Modul hinzufügen",
-        "addHint": "Vollständigen Modul-String eingeben, z.B. npm/@foxreis/tizentube oder gh/reisxd/tizentube",
-        "inputPlaceholder": "npm/@foxreis/tizentube",
-        "addButton": "Modul hinzufügen",
-        "addSuccess": "Modul erfolgreich hinzugefügt.",
-        "duplicate": "Dieses Modul ist bereits in der Liste.",
-        "addError": "Modul konnte nicht hinzugefügt werden: {{error}}",
-        "removeSuccess": "Modul entfernt.",
-        "removeError": "Modul konnte nicht entfernt werden: {{error}}",
-        "loadError": "Module konnten nicht geladen werden: {{error}}",
-        "greenKey": "GRÜNE Taste: Tastatur öffnen / Modul hinzufügen",
-        "navHint1": "Zur Eingabe navigieren, OK oder GRÜN drücken um Tastatur zu öffnen",
-        "navHint2": "OK auf einer Modulzeile = Modul entfernen"
     },
     "__contributors": [
         "krx3d"

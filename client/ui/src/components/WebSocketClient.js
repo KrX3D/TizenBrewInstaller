@@ -1,18 +1,12 @@
 import i18next from 'i18next';
 
 const Events = {
-    InstallPackage:         1,
-    NavigateDirectory:      2,
-    Error:                  3,
-    InstallationStatus:     4,
-    DeleteConfiguration:    5,
-    ConnectToTV:            6,
-    CheckTizenBrewConfig:   7,
-    ResetTizenBrewConfig:   8,
-    GetTBModules:           9,
-    AddTBModule:            10,
-    RemoveTBModule:         11,
-    CheckConfigurationAccess: 12,
+    InstallPackage:           1,
+    NavigateDirectory:        2,
+    Error:                    3,
+    InstallationStatus:       4,
+    DeleteConfiguration:      5,
+    ConnectToTV:              6,
 };
 
 class Client {
@@ -74,129 +68,6 @@ class Client {
                         type: 'SET_ERROR',
                         payload: { message: payload.error, disappear: false }
                     });
-                }
-                break;
-            }
-            case Events.CheckConfigurationAccess: {
-                if (!toast) break;
-
-                if (!payload.exists) {
-                    toast.info(i18next.t('configAccess.notFound'));
-                    break;
-                }
-
-                const yes = i18next.t('configAccess.yes');
-                const no  = i18next.t('configAccess.no');
-
-                let msg =
-                    i18next.t('configAccess.header') + '\n' +
-                    i18next.t('configAccess.write',  { value: payload.canWrite  ? yes : no }) + '\n' +
-                    i18next.t('configAccess.delete', { value: payload.canDelete ? yes : no });
-
-                if (payload.fixAttempt) {
-                    msg += '\n' + (payload.fixAttempt.success
-                        ? i18next.t('configAccess.fixSuccess')
-                        : i18next.t('configAccess.fixFailed'));
-                    if (payload.fixAttempt.reason) {
-                        msg += '\n' + i18next.t('configAccess.fixReason', { reason: payload.fixAttempt.reason });
-                    }
-                }
-
-                if (!payload.canWrite || !payload.canDelete) {
-                    msg += '\n\n' + i18next.t('configAccess.sandboxWarning');
-                }
-
-                toast.info(msg, 10000);
-                break;
-            }
-            case Events.CheckTizenBrewConfig: {
-                if (!toast) break;
-                if (!payload.exists) {
-                    toast.info(i18next.t('tizenBrewConfig.notFound'));
-                    break;
-                }
-                if (payload.error) {
-                    toast.error(i18next.t('tizenBrewConfig.statError', { error: payload.error }));
-                    break;
-                }
-
-                const sizeKb = (payload.size / 1024).toFixed(1);
-                const mtime  = new Date(payload.mtime).toLocaleString();
-                const permStr = [
-                    payload.readable ? i18next.t('tizenBrewConfig.readable') : null,
-                    payload.writable ? i18next.t('tizenBrewConfig.writable') : null,
-                ].filter(Boolean).join(', ') || i18next.t('tizenBrewConfig.noPermissions');
-                const modeStr = payload.mode ? ` (0${payload.mode})` : '';
-
-                let msg = i18next.t('tizenBrewConfig.fileInfo', {
-                    sizeKb,
-                    mtime,
-                    permStr: `${permStr}${modeStr}`
-                });
-
-                if (payload.parseError) {
-                    msg += '\n\n⚠️ ' + payload.parseError;
-                } else if (payload.config !== null && payload.config !== undefined) {
-                    msg += '\n\n' + JSON.stringify(payload.config, null, 2);
-                }
-
-                if (payload.attemptedPermissionFix) {
-                    if (payload.permissionFixApplied) {
-                        if (payload.modeBefore === payload.mode) {
-                            msg += '\n\n' + i18next.t('tizenBrewConfig.permFix.noChange', { mode: payload.mode });
-                        } else {
-                            msg += '\n\n' + i18next.t('tizenBrewConfig.permFix.applied', {
-                                before: payload.modeBefore,
-                                after:  payload.mode
-                            });
-                        }
-                    } else {
-                        msg += '\n\n' + i18next.t('tizenBrewConfig.permFix.failed');
-                    }
-                }
-
-                toast.info(msg, 12000);
-                break;
-            }
-            case Events.ResetTizenBrewConfig: {
-                if (!toast) break;
-                const msgs = {
-                    success:          () => toast.success(i18next.t('tizenBrewConfig.resetSuccess')),
-                    notFound:         () => toast.info(i18next.t('tizenBrewConfig.notFound')),
-                    permissionDenied: () => toast.error(i18next.t('tizenBrewConfig.permissionDenied')),
-                    error:            () => toast.error(i18next.t('tizenBrewConfig.resetError', { error: payload.message })),
-                };
-                (msgs[payload.status] ?? (() => {}))();
-                break;
-            }
-            case Events.GetTBModules: {
-                this.context.dispatch({ type: 'SET_TB_MODULES', payload: payload.modules ?? [] });
-                if (payload.error && toast) {
-                    toast.error(i18next.t('tbModules.loadError', { error: payload.error }));
-                }
-                break;
-            }
-            case Events.AddTBModule: {
-                if (!toast) break;
-                if (payload.status === 'success') {
-                    this.context.dispatch({ type: 'SET_TB_MODULES', payload: payload.modules });
-                    toast.success(i18next.t('tbModules.addSuccess'));
-                } else if (payload.status === 'duplicate') {
-                    toast.info(i18next.t('tbModules.duplicate'));
-                } else {
-                    toast.error(i18next.t('tbModules.addError', { error: payload.message }));
-                }
-                break;
-            }
-            case Events.RemoveTBModule: {
-                if (!toast) break;
-                if (payload.status === 'success') {
-                    this.context.dispatch({ type: 'SET_TB_MODULES', payload: payload.modules });
-                    toast.success(i18next.t('tbModules.removeSuccess'));
-                } else if (payload.status === 'notFound') {
-                    toast.info(i18next.t('tizenBrewConfig.notFound'));
-                } else {
-                    toast.error(i18next.t('tbModules.removeError', { error: payload.message }));
                 }
                 break;
             }

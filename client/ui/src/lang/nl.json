@@ -40,27 +40,6 @@
         "sdbConnectionRefused": "Kan geen verbinding maken met de SDB Daemon. Zorg ervoor dat de TV aan staat en het IP-adres correct is.",
         "sdbConnectionReset": "Kan geen verbinding maken met de SDB Daemon. U hebt de Host PC IP mogelijk niet ingesteld op het IP van dit apparaat, of de TV niet correct opnieuw opgestart. Houd de aan/uit-knop ingedrukt tot het Samsung-logo verschijnt."
     },
-    "tizenBrewConfig": {
-        "checkButton": "TB-configuratie controleren",
-        "checkDesc": "Controleren of tizenbrewConfig.json bestaat en de bijbehorende rechten.",
-        "resetButton": "TB-configuratie resetten",
-        "resetDesc": "tizenbrewConfig.json verwijderen — TizenBrew maakt het bestand bij de volgende start opnieuw aan.",
-        "resetConfirm": "tizenbrewConfig.json verwijderen?\nTizenBrew maakt het bestand bij de volgende start opnieuw aan.",
-        "notFound": "tizenbrewConfig.json niet gevonden.",
-        "fileInfo": "tizenbrewConfig.json\nGrootte: {{sizeKb}} KB  •  Rechten: {{permStr}}\nLaatst gewijzigd: {{mtime}}",
-        "readable": "leesbaar",
-        "writable": "beschrijfbaar",
-        "noPermissions": "geen rechten",
-        "statError": "Kan tizenbrewConfig.json niet lezen: {{error}}",
-        "resetSuccess": "tizenbrewConfig.json succesvol verwijderd.",
-        "permissionDenied": "Kan tizenbrewConfig.json niet verwijderen — toegang geweigerd.",
-        "resetError": "Verwijderen van tizenbrewConfig.json mislukt: {{error}}",
-        "permFix": {
-            "noChange": "Rechtencorrectie: al op 0{{mode}} (geen wijziging nodig)",
-            "applied": "Rechtencorrectie: toegepast (0{{before}} → 0{{after}})",
-            "failed": "Rechtencorrectie: mislukt (eigenaar/sandbox-beperking)"
-        }
-    },
     "configAccess": {
         "notFound": "Configuratiebestand niet gevonden.",
         "header": "Toegangscontrole configuratie:",
@@ -73,10 +52,6 @@
         "fixReason": "Reden: {{reason}}",
         "sandboxWarning": "Het bestand kan nog steeds worden geblokkeerd door eigenaar- of app-sandbox-beperkingen."
     },
-    "modal": {
-        "ok": "OK",
-        "cancel": "Annuleren"
-    },
     "savedRepos": {
         "button": "Opgeslagen repos",
         "desc": "{{count}} opgeslagen repo('s)",
@@ -85,26 +60,6 @@
         "pageDesc": "Selecteer een repo om deze actief te maken. Gebruik ◀▶ voor Installeren / Verwijderen.",
         "empty": "Nog geen opgeslagen repos. Installeer vanuit GitHub om er een toe te voegen.",
         "hint": "◀▶ actie wisselen  |  OK = bevestigen  |  ▲▼ repo wisselen"
-    },
-    "tbModules": {
-        "homeButton": "Modules beheren",
-        "homeDesc": "TizenBrew-modules toevoegen of verwijderen uit tizenbrewConfig.json.",
-        "pageTitle": "Modules beheren",
-        "pageDesc": "Modules worden geladen bij de volgende TizenBrew-start.",
-        "empty": "Nog geen modules geïnstalleerd.",
-        "addTitle": "Module toevoegen",
-        "addHint": "Voer de volledige modulestring in, bijv. npm/@foxreis/tizentube of gh/reisxd/tizentube",
-        "inputPlaceholder": "npm/@foxreis/tizentube",
-        "addButton": "Module toevoegen",
-        "addSuccess": "Module succesvol toegevoegd.",
-        "duplicate": "Deze module staat al in de lijst.",
-        "addError": "Module toevoegen mislukt: {{error}}",
-        "removeSuccess": "Module verwijderd.",
-        "removeError": "Module verwijderen mislukt: {{error}}",
-        "loadError": "Modules laden mislukt: {{error}}",
-        "greenKey": "GROENE toets: toetsenbord openen / module toevoegen",
-        "navHint1": "Navigeer naar invoer, druk op OK of GROEN om toetsenbord te openen",
-        "navHint2": "OK op een modulerij = module verwijderen"
     },
     "__contributors": [
         "owen-the-kid"

@@ -8,7 +8,6 @@ function loadRepoList() {
         const stored = localStorage.getItem('tizenBrewRepoList');
         if (stored) return JSON.parse(stored);
     } catch (_) {}
-    // First install — seed both defaults
     saveRepoList(DEFAULT_REPOS);
     return DEFAULT_REPOS;
 }
@@ -21,7 +20,6 @@ const initialState = {
     sharedData: {
         tizenBrewRepo: localStorage.getItem('tizenBrewRepo') || 'reisxd/TizenBrew',
         repoList: loadRepoList(),
-        tbModules: [],
         state: null,
         directory: [],
         error: { message: null, dissapear: false },
@@ -51,8 +49,6 @@ function reducer(state, action) {
         case 'SET_TIZENBREW_REPO':
             localStorage.setItem('tizenBrewRepo', action.payload);
             return { ...state, sharedData: { ...state.sharedData, tizenBrewRepo: action.payload } };
-        case 'SET_TB_MODULES':
-            return { ...state, sharedData: { ...state.sharedData, tbModules: action.payload } };
         case 'ADD_REPO': {
             const repo = action.payload.trim();
             if (!repo) return state;

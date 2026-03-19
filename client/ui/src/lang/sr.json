@@ -40,27 +40,6 @@
         "sdbConnectionRefused": "Није могуће повезати се са SDB Daemon. Проверите да ли је ТВ укључен и да ли је IP адреса тачна.",
         "sdbConnectionReset": "Није могуће повезати се са SDB Daemon. Или нисте поставили Host PC IP на IP овог уређаја, или ТВ није правилно поново покренут. Задржите дугме за паљење до појаве Samsung лога."
     },
-    "tizenBrewConfig": {
-        "checkButton": "Провери TB конфиг",
-        "checkDesc": "Провери да ли tizenbrewConfig.json постоји и које су му дозволе.",
-        "resetButton": "Ресетуј TB конфиг",
-        "resetDesc": "Избриши tizenbrewConfig.json — TizenBrew ће га поново креирати при следећем покретању.",
-        "resetConfirm": "Избриши tizenbrewConfig.json?\nTizenBrew ће га поново креирати при следећем покретању.",
-        "notFound": "tizenbrewConfig.json није пронађен.",
-        "fileInfo": "tizenbrewConfig.json\nВеличина: {{sizeKb}} KB  •  Дозволе: {{permStr}}\nПоследња измена: {{mtime}}",
-        "readable": "читљиво",
-        "writable": "уписиво",
-        "noPermissions": "нема дозвола",
-        "statError": "Није могуће прочитати tizenbrewConfig.json: {{error}}",
-        "resetSuccess": "tizenbrewConfig.json успешно избрисан.",
-        "permissionDenied": "Није могуће избрисати tizenbrewConfig.json — приступ одбијен.",
-        "resetError": "Брисање tizenbrewConfig.json није успело: {{error}}",
-        "permFix": {
-            "noChange": "Исправка дозвола: већ на 0{{mode}} (нема потребе за променом)",
-            "applied": "Исправка дозвола: примењена (0{{before}} → 0{{after}})",
-            "failed": "Исправка дозвола: неуспешна (ограничење власника/sandbox-а)"
-        }
-    },
     "configAccess": {
         "notFound": "Конфигурациони фајл није пронађен.",
         "header": "Провера приступа конфигурацији:",
@@ -73,10 +52,6 @@
         "fixReason": "Разлог: {{reason}}",
         "sandboxWarning": "Фајл може бити блокиран ограничењима власника / app sandbox-а."
     },
-    "modal": {
-        "ok": "OK",
-        "cancel": "Откажи"
-    },
     "savedRepos": {
         "button": "Сачувани репозиторијуми",
         "desc": "{{count}} сачуван(их) репозиторијума",
@@ -85,26 +60,6 @@
         "pageDesc": "Изаберите репозиторијум да га активирате. Користите ◀▶ за Инсталирање / Брисање.",
         "empty": "Нема сачуваних репозиторијума. Инсталирајте са GitHub-а да бисте додали.",
         "hint": "◀▶ промени акцију  |  OK = потврди  |  ▲▼ промени репозиторијум"
-    },
-    "tbModules": {
-        "homeButton": "Управљај модулима",
-        "homeDesc": "Додај или уклони TizenBrew модуле у tizenbrewConfig.json.",
-        "pageTitle": "Управљај модулима",
-        "pageDesc": "Модули се учитавају при следећем покретању TizenBrew-а.",
-        "empty": "Нема инсталираних модула.",
-        "addTitle": "Додај модул",
-        "addHint": "Унесите потпуни низ модула, нпр. npm/@foxreis/tizentube или gh/reisxd/tizentube",
-        "inputPlaceholder": "npm/@foxreis/tizentube",
-        "addButton": "Додај модул",
-        "addSuccess": "Модул успешно додат.",
-        "duplicate": "Овај модул је већ у листи.",
-        "addError": "Додавање модула није успело: {{error}}",
-        "removeSuccess": "Модул уклоњен.",
-        "removeError": "Уклањање модула није успело: {{error}}",
-        "loadError": "Учитавање модула није успело: {{error}}",
-        "greenKey": "ЗЕЛЕНО дугме: отвори тастатуру / додај модул",
-        "navHint1": "Пређи на унос, притисни OK или ЗЕЛЕНО за отварање тастатуре",
-        "navHint2": "OK на реду модула = уклони модул"
     },
     "__contributors": [
         "milovanovic"

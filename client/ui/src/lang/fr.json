@@ -40,27 +40,6 @@
         "sdbConnectionRefused": "Connexion au SDB Daemon impossible. Assurez-vous que la TV est allumée et que l'adresse IP est correcte.",
         "sdbConnectionReset": "Connexion au SDB Daemon impossible. Soit vous n'avez pas défini l'IP du PC hôte sur l'IP de cet appareil, soit vous n'avez pas redémarré la TV correctement. Maintenez le bouton d'alimentation jusqu'à voir le logo Samsung."
     },
-    "tizenBrewConfig": {
-        "checkButton": "Vérifier la config TB",
-        "checkDesc": "Vérifier si tizenbrewConfig.json existe et ses permissions.",
-        "resetButton": "Réinitialiser la config TB",
-        "resetDesc": "Supprimer tizenbrewConfig.json — TizenBrew la recréera au prochain démarrage.",
-        "resetConfirm": "Supprimer tizenbrewConfig.json ?\nTizenBrew la recréera au prochain démarrage.",
-        "notFound": "tizenbrewConfig.json est introuvable.",
-        "fileInfo": "tizenbrewConfig.json\nTaille : {{sizeKb}} Ko  •  Permissions : {{permStr}}\nDernière modification : {{mtime}}",
-        "readable": "lisible",
-        "writable": "accessible en écriture",
-        "noPermissions": "aucune permission",
-        "statError": "Impossible de lire tizenbrewConfig.json : {{error}}",
-        "resetSuccess": "tizenbrewConfig.json supprimé avec succès.",
-        "permissionDenied": "Impossible de supprimer tizenbrewConfig.json — permission refusée.",
-        "resetError": "Échec de la suppression de tizenbrewConfig.json : {{error}}",
-        "permFix": {
-            "noChange": "Correction des permissions : déjà à 0{{mode}} (aucun changement nécessaire)",
-            "applied": "Correction des permissions : appliquée (0{{before}} → 0{{after}})",
-            "failed": "Correction des permissions : échouée (restriction propriétaire/sandbox)"
-        }
-    },
     "configAccess": {
         "notFound": "Fichier de configuration introuvable.",
         "header": "Vérification de l'accès à la config :",
@@ -73,10 +52,6 @@
         "fixReason": "Raison : {{reason}}",
         "sandboxWarning": "Le fichier peut encore être bloqué par les restrictions du propriétaire / sandbox de l'application."
     },
-    "modal": {
-        "ok": "OK",
-        "cancel": "Annuler"
-    },
     "savedRepos": {
         "button": "Dépôts enregistrés",
         "desc": "{{count}} dépôt(s) enregistré(s)",
@@ -85,26 +60,6 @@
         "pageDesc": "Sélectionnez un dépôt pour l'activer. Utilisez ◀▶ pour Installer / Supprimer.",
         "empty": "Aucun dépôt enregistré. Installez depuis GitHub pour en ajouter un.",
         "hint": "◀▶ changer d'action  |  OK = confirmer  |  ▲▼ changer de dépôt"
-    },
-    "tbModules": {
-        "homeButton": "Gérer les modules",
-        "homeDesc": "Ajouter ou supprimer des modules TizenBrew dans tizenbrewConfig.json.",
-        "pageTitle": "Gérer les modules",
-        "pageDesc": "Les modules sont chargés au prochain démarrage de TizenBrew.",
-        "empty": "Aucun module installé.",
-        "addTitle": "Ajouter un module",
-        "addHint": "Entrez la chaîne complète du module, ex. npm/@foxreis/tizentube ou gh/reisxd/tizentube",
-        "inputPlaceholder": "npm/@foxreis/tizentube",
-        "addButton": "Ajouter le module",
-        "addSuccess": "Module ajouté avec succès.",
-        "duplicate": "Ce module est déjà dans la liste.",
-        "addError": "Échec de l'ajout du module : {{error}}",
-        "removeSuccess": "Module supprimé.",
-        "removeError": "Échec de la suppression du module : {{error}}",
-        "loadError": "Impossible de charger les modules : {{error}}",
-        "greenKey": "Touche VERTE : ouvrir le clavier / soumettre le module",
-        "navHint1": "Naviguer vers la saisie, appuyer sur OK ou VERT pour ouvrir le clavier",
-        "navHint2": "OK sur une ligne de module = supprimer le module"
     },
     "__contributors": [
         "Kiriox94"
