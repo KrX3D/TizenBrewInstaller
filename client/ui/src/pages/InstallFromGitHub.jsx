@@ -34,7 +34,6 @@ export default function InstallFromGitHub() {
                 <Item>
                     <input
                         type="password"
-                        inputMode="url"
                         autoCapitalize="off"
                         autoCorrect="off"
                         spellCheck={false}

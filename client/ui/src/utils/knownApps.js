@@ -11,6 +11,7 @@ export const KNOWN_APPS = [
     { key: 'TIZENBREW',           repoName: 'tizenbrew',          pkgId: 'xvvl3S1bvH', appName: 'TizenBrewStandalone' },
     { key: 'TIZENBREW_INSTALLER', repoName: 'tizenbrewinstaller', pkgId: 'xvvl3S1bTI', appName: 'TizenBrewStandalone' },
     { key: 'TIZENBREW_USB_DEMO',  repoName: null,                 pkgId: 'xvvl3S1bTU', appName: 'TizenBrewStandalone' },
+    { key: 'TIZENYOUTUBE',        repoName: null,                 pkgId: 'krx3dYtV01', appName: 'TizenYouTube' },
 ];
 
 // Full app IDs:  PKG.TIZENBREW  → 'xvvl3S1bvH.TizenBrewStandalone'
