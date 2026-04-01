@@ -11,7 +11,7 @@ import {
     repoLabel,
     isKnownRepo,
     getInstalledVersion,
-    fetchLatestVersion,
+    fetchLatestVersionInfo,
     isUpdateAvailable
 } from '../utils/versionInfo.js';
 
@@ -35,14 +35,20 @@ export default function Home() {
     const installed = installedVersion !== null;
 
     const [latestVersion, setLatestVersion] = useState(null);
+    const [latestSource, setLatestSource] = useState('unavailable');
     const [loadingLatest, setLoadingLatest] = useState(false);
 
     useEffect(() => {
         if (!activeRepo) return;
         setLatestVersion(null);
+        setLatestSource('unavailable');
         setLoadingLatest(true);
-        fetchLatestVersion(activeRepo)
-            .then(v => { setLatestVersion(v); setLoadingLatest(false); })
+        fetchLatestVersionInfo(activeRepo)
+            .then(info => {
+                setLatestVersion(info.latestVersion);
+                setLatestSource(info.latestSource || 'unavailable');
+                setLoadingLatest(false);
+            })
             .catch(() => setLoadingLatest(false));
     }, [activeRepo, versionRefreshTick]);
 
@@ -119,11 +125,17 @@ export default function Home() {
                     )}
                     {latestVersion && (
                         <p className={`text-sm mt-1 ${updateAvailable ? 'text-amber-400 font-semibold' : 'text-slate-400'}`}>
-                            Latest: {latestVersion}{updateAvailable ? ' ⬆ Update available' : installed ? ' ✓ Up to date' : ''}
+                            Latest: {latestVersion}
+                            {latestSource === 'cache_fresh' ? ' (cached)' : ''}
+                            {latestSource === 'cache_stale' ? ' (cached, online check failed)' : ''}
+                            {updateAvailable ? ' ⬆ Update available' : (installed && latestSource === 'online') ? ' ✓ Up to date' : ''}
                         </p>
                     )}
                     {loadingLatest && !latestVersion && (
                         <p className="text-xs text-slate-500 mt-1">Checking latest version...</p>
+                    )}
+                    {!loadingLatest && !latestVersion && (
+                        <p className="text-xs text-amber-400 mt-1">Could not check latest version online.</p>
                     )}
                     {!isKnownRepo(activeRepo) && (
                         <p className="text-xs text-slate-500 mt-1">{t('installer.versionUnknown')}</p>

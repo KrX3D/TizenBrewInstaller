@@ -37,6 +37,10 @@ export function fetchLatestVersion(repo) {
     });
 }
 
+export function fetchLatestVersionInfo(repo) {
+    return fetchLatestReleaseInfo(repo);
+}
+
 export function isUpdateAvailable(installedVersion, latestVersion) {
     if (!installedVersion || !latestVersion) return false;
     var a = installedVersion.split('.').map(Number);
@@ -63,6 +67,7 @@ export function fetchAllVersionInfo(repoList) {
                 latestVersion: info.latestVersion,
                 appId: info.appId,
                 appName: info.appName,
+                latestSource: info.latestSource,
                 installedVersion: installedVersion,
                 updateAvailable: isUpdateAvailable(installedVersion, info.latestVersion)
             };
@@ -116,9 +121,9 @@ export function fetchLatestReleaseInfo(repo) {
     }
 
     var cached = readCachedReleaseInfo(repo);
-    var MAX_CACHE_AGE_MS = 15 * 60 * 1000;
+    var MAX_CACHE_AGE_MS = 5 * 60 * 1000;
     if (cached && cached.latestVersion && cached.cachedAt && (Date.now() - cached.cachedAt) < MAX_CACHE_AGE_MS) {
-        return Promise.resolve(cached);
+        return Promise.resolve(Object.assign({}, cached, { latestSource: 'cache_fresh' }));
     }
 
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -133,13 +138,14 @@ export function fetchLatestReleaseInfo(repo) {
         })
         .then(function(data) {
             clearTimeout(timeoutId);
-            if (!data) return { latestVersion: null, appId: null, appName: null };
+            if (!data) return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable' };
             var metadata = parseMetadataFromReleaseBody(data.body || '');
             var out = {
                 latestVersion: data.tag_name ? data.tag_name.replace(/^v/, '') : null,
                 appId: metadata.appId,
                 appName: metadata.appName,
-                cachedAt: Date.now()
+                cachedAt: Date.now(),
+                latestSource: 'online'
             };
             writeCachedReleaseInfo(repo, out);
             return out;
@@ -147,8 +153,8 @@ export function fetchLatestReleaseInfo(repo) {
         .catch(function() {
             clearTimeout(timeoutId);
             // If network/API fails, keep showing last cached data instead of blank latest row.
-            if (cached && cached.latestVersion) return cached;
-            return { latestVersion: null, appId: null, appName: null };
+            if (cached && cached.latestVersion) return Object.assign({}, cached, { latestSource: 'cache_stale' });
+            return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable' };
         });
 }
 

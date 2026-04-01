@@ -89,6 +89,8 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete, vers
                         {versionInfo.latestVersion && (
                             <span className={hasUpdate ? 'text-amber-400' : 'text-slate-400'}>
                                 Latest: <span className={hasUpdate ? 'text-amber-300 font-semibold' : 'text-slate-200'}>{versionInfo.latestVersion}</span>
+                                {versionInfo.latestSource === 'cache_fresh' ? ' (cached)' : ''}
+                                {versionInfo.latestSource === 'cache_stale' ? ' (cached/offline)' : ''}
                             </span>
                         )}
                         {versionInfo.latestVersion === null && versionInfo.latestVersion !== undefined && (
