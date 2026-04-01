@@ -6,11 +6,17 @@ module.exports.onStart = function () {
     console.log('Service started');
     const express = require('express');
     const fetch = require('node-fetch');
+    const https = require('https');
     const adbhost = require('adbhost');
-    const { readConfig, writeConfig } = require('./utils/configuration.js');
-    const { fetchLatestRelease } = require('./utils/GitHubAPI.js')
+    const {
+        readConfig,
+        writeConfig,
+        deleteConfig,
+        tryFixConfigPermissions
+    } = require('./utils/configuration.js');
+    const { fetchLatestRelease } = require('./utils/GitHubAPI.js');
     const { createSamsungCertificate, resignPackage } = require('./utils/SamsungCertificateCreation.js');
-    const { writeFileSync, readFileSync, readdirSync, statSync, mkdirSync, existsSync, accessSync, constants, unlinkSync } = require('fs');
+    const { writeFileSync, readFileSync, readdirSync, statSync, mkdirSync, existsSync } = require('fs');
     const { setValue } = require('./utils/Buxton2.js');
     const { join, dirname } = require('path');
     const { parsePackage, installPackage } = require('./utils/PackageInstallation.js');
@@ -32,7 +38,6 @@ module.exports.onStart = function () {
 
     const app = express();
     if (!isTV) {
-        // Enable static file serving for frontend
         console.log('Open up http://localhost:8091/ui/dist/index.html to access the TizenBrew Installer.');
         if (existsSync(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client`)) {
             app.use(express.static(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client`));
@@ -46,7 +51,7 @@ module.exports.onStart = function () {
         fetch('http://127.0.0.1:8001/api/v2/').then(res => res.json())
             .then(json => {
                 canConnectToDevice = (json.device.developerIP === '127.0.0.1' || json.device.developerIP === '1.0.0.127') && json.device.developerMode === '1';
-            }).catch(err => {
+            }).catch(() => {
                 setTimeout(checkCanConnectToDevice, 1000);
             });
     }
@@ -67,7 +72,7 @@ module.exports.onStart = function () {
                 adbClient = adbhost.createConnection({ host: ip || '127.0.0.1', port: 26101 });
                 let hasConnected = false;
                 const waitTimeout = setTimeout(() => {
-                    if (hasConnected) resolve(adbClient)
+                    if (hasConnected) resolve(adbClient);
                 }, 1000);
 
                 adbClient._stream.on('connect', () => {
@@ -104,21 +109,25 @@ module.exports.onStart = function () {
         });
     }
 
-
     function mkdirRecursive(targetDir) {
         if (existsSync(targetDir)) return;
         const parent = dirname(targetDir);
-        if (!existsSync(parent)) {
-            mkdirRecursive(parent);
-        }
+        if (!existsSync(parent)) mkdirRecursive(parent);
         mkdirSync(targetDir);
     }
 
-    const TB_CONFIG_DEFAULT = {
-        modules: [],
-        autoLaunchServiceList: [],
-        autoLaunchModule: ''
-    };
+    function fetchWithCertFallback(url, options) {
+        return fetch(url, options).catch(err => {
+            const msg = String(err && err.message || err);
+            const certErr = /certificate|unable to get local issuer|self signed/i.test(msg);
+            if (!certErr) throw err;
+            console.warn('[TLS fallback] Retrying download with relaxed certificate validation for:', url);
+            return fetch(url, {
+                ...options,
+                agent: new https.Agent({ rejectUnauthorized: false })
+            });
+        });
+    }
 
     wsServer.on('connection', (ws) => {
         const wsConn = new Connection(ws);
@@ -126,7 +135,7 @@ module.exports.onStart = function () {
         ws.on('message', (message) => {
             let msg;
             try {
-                msg = JSON.parse(message)
+                msg = JSON.parse(message);
             } catch (e) {
                 return wsConn.send(wsConn.Event(Events.Error, `Invalid JSON: ${message}`));
             }
@@ -141,7 +150,6 @@ module.exports.onStart = function () {
                         } else if (canConnectToDevice === null) return;
                     }
                     if (isTizen7OrHigher) {
-                        // Check if we have author and distributor certificates
                         const config = readConfig();
                         if (!config.authorCert || !config.distributorCert || !config.password) {
                             return wsConn.send(wsConn.Event(Events.InstallPackage, { response: 2 }));
@@ -153,7 +161,7 @@ module.exports.onStart = function () {
                             .then(pkg => {
                                 wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installing'));
                                 if (isTV) {
-                                    if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive(`/home/owner/share/tmp/sdk_tools`);
+                                    if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive('/home/owner/share/tmp/sdk_tools');
                                     writeFileSync(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer);
                                 } else {
                                     PushFile(adbClient, `/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer, () => {
@@ -161,6 +169,9 @@ module.exports.onStart = function () {
                                             .then(result => {
                                                 wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
                                                 wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                            })
+                                            .catch(err => {
+                                                wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
                                             });
                                     });
                                     return;
@@ -168,18 +179,22 @@ module.exports.onStart = function () {
 
                                 if (payload.url && payload.url === 'reisxd/TizenBrewInstaller' &&
                                     !isTV && existsSync(`${homedir()}/share/tizenbrewInstallerConfig.json`)) {
-                                    // Send the existing config to the TV
                                     PushFile(adbClient, '/home/owner/share/tizenbrewInstallerConfig.json', readFileSync(`${homedir()}/share/tizenbrewInstallerConfig.json`), () => {
                                         console.log('Config pushed to TV for Installer');
                                     });
                                 }
 
                                 if (isTizen3 && isTV) {
-                                    const result = installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId);
-                                    setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
-                                    setValue('db/sdk/develop/mode', 'int32', '1');
-                                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                    wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                    Promise.resolve(installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId))
+                                        .then(result => {
+                                            setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
+                                            setValue('db/sdk/develop/mode', 'int32', '1');
+                                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
+                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                        })
+                                        .catch(err => {
+                                            wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
+                                        });
                                 } else if (isTV) {
                                     createAdbConnection()
                                         .then(adbClient => {
@@ -191,6 +206,9 @@ module.exports.onStart = function () {
                                                         adbClient._stream.end();
                                                         adbClient._stream.destroy();
                                                     }, 5000);
+                                                })
+                                                .catch(err => {
+                                                    wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
                                                 });
                                         })
                                         .catch(err => {
@@ -205,13 +223,16 @@ module.exports.onStart = function () {
                     }
 
                     if (payload.url.split('/').length === 2) {
-                        // GitHub repository
                         wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.fetching'));
                         fetchLatestRelease(payload.url)
                             .then(release => {
                                 const asset = release.assets.find(a => a.name.endsWith('.wgt') || a.name.endsWith('.tpk'));
-                                fetch(asset.browser_download_url)
-                                    .then(res => res.buffer())
+                                if (!asset) throw new Error('No .wgt/.tpk asset found in latest release.');
+                                fetchWithCertFallback(asset.browser_download_url)
+                                    .then(res => {
+                                        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                                        return res.buffer();
+                                    })
                                     .then(buffer => {
                                         if (isTizen7OrHigher) {
                                             wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.resigning'));
@@ -221,7 +242,6 @@ module.exports.onStart = function () {
                                                 distributorCert: Buffer.from(config.distributorCert, 'base64').toString('binary'),
                                                 password: config.password
                                             };
-
                                             resignPackage(certificates, buffer)
                                                 .then(resignedBuffer => {
                                                     wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
@@ -239,7 +259,6 @@ module.exports.onStart = function () {
                                 wsConn.send(wsConn.Event(Events.Error, `Error fetching GitHub release: ${err.message}`));
                             });
                     } else {
-                        // USB installation
                         const fileBuffer = readFileSync(payload.url);
                         if (isTizen7OrHigher) {
                             const config = readConfig();
@@ -248,7 +267,6 @@ module.exports.onStart = function () {
                                 distributorCert: Buffer.from(config.distributorCert, 'base64').toString('binary'),
                                 password: config.password
                             };
-
                             wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.resigning'));
                             resignPackage(certificates, fileBuffer)
                                 .then(resignedBuffer => {
@@ -263,7 +281,6 @@ module.exports.onStart = function () {
                             parseAndInstall(fileBuffer);
                         }
                     }
-
                     break;
                 }
 
@@ -278,25 +295,23 @@ module.exports.onStart = function () {
                         const filePath = join(payload, file);
                         try {
                             const stats = statSync(filePath);
-                            metadata.push({
-                                name: file,
-                                path: filePath,
-                                isDirectory: stats.isDirectory()
-                            });
-                        } catch (e) { }
+                            metadata.push({ name: file, path: filePath, isDirectory: stats.isDirectory() });
+                        } catch (e) {}
                     }
                     wsConn.send(wsConn.Event(Events.NavigateDirectory, metadata));
                     break;
                 }
+
                 case Events.DeleteConfiguration: {
-                    const config = readConfig();
-                    config.authorCert = null;
-                    config.distributorCert = null;
-                    config.password = null;
-                    writeConfig(config);
-                    wsConn.send(wsConn.Event(Events.DeleteConfiguration, null));
+                    let result = deleteConfig();
+                    if (!result.success) {
+                        const fixResult = tryFixConfigPermissions();
+                        if (fixResult.success) result = deleteConfig();
+                    }
+                    wsConn.send(wsConn.Event(Events.DeleteConfiguration, result));
                     break;
                 }
+
                 case Events.ConnectToTV: {
                     try {
                         createAdbConnection(payload)
@@ -318,143 +333,7 @@ module.exports.onStart = function () {
                     }
                     break;
                 }
-                case Events.CheckTizenBrewConfig: {
-                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
-                    if (!existsSync(TB_CONFIG)) {
-                        return wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, { exists: false }));
-                    }
-                    try {
-                        const stats = statSync(TB_CONFIG);
-                        let readable = false, writable = false;
-                        try { accessSync(TB_CONFIG, constants.R_OK); readable = true; } catch (_) {}
-                        try { accessSync(TB_CONFIG, constants.W_OK); writable = true; } catch (_) {}
-                
-                        // Also read the actual content so the UI can show the full config
-                        let configContent = null;
-                        let configError = null;
-                        if (readable) {
-                            try {
-                                configContent = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
-                            } catch (e) {
-                                configError = 'JSON parse error: ' + e.message;
-                            }
-                        }
-                
-                        wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, {
-                            exists: true,
-                            readable,
-                            writable,
-                            size: stats.size,
-                            mtime: stats.mtime.toISOString(),
-                            config: configContent,
-                            parseError: configError
-                        }));
-                    } catch (e) {
-                        wsConn.send(wsConn.Event(Events.CheckTizenBrewConfig, { exists: true, error: e.message }));
-                    }
-                    break;
-                }
-                case Events.ResetTizenBrewConfig: {
-                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
-                    if (!existsSync(TB_CONFIG)) {
-                        return wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, { status: 'notFound' }));
-                    }
-                    try { accessSync(TB_CONFIG, constants.W_OK); }
-                    catch (_) {
-                        return wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, { status: 'permissionDenied' }));
-                    }
-                    try {
-                        unlinkSync(TB_CONFIG);
-                        wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, { status: 'success' }));
-                    } catch (e) {
-                        wsConn.send(wsConn.Event(Events.ResetTizenBrewConfig, { status: 'error', message: e.message }));
-                    }
-                    break;
-                }
-                case Events.GetTBModules: {
-                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
-                    if (!existsSync(TB_CONFIG)) {
-                        // File absent — return empty list, don't create yet
-                        return wsConn.send(wsConn.Event(Events.GetTBModules, { modules: [] }));
-                    }
-                    try {
-                        const raw = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
-                        const modules = Array.isArray(raw.modules) ? raw.modules : [];
-                        wsConn.send(wsConn.Event(Events.GetTBModules, { modules }));
-                    } catch (e) {
-                        wsConn.send(wsConn.Event(Events.GetTBModules, { modules: [], error: e.message }));
-                    }
-                    break;
-                }
-                
-                case Events.AddTBModule: {
-                    // payload: { module: string }  e.g. "npm/@foxreis/tizentube" or "gh/user/repo"
-                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
-                    const moduleStr = (payload.module || '').trim();
-                    if (!moduleStr) {
-                        return wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'error', message: 'Empty module string.' }));
-                    }
-                
-                    let config;
-                    if (existsSync(TB_CONFIG)) {
-                        try {
-                            config = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
-                            if (!Array.isArray(config.modules)) config.modules = [];
-                        } catch (_) {
-                            // Unreadable / corrupt — start fresh but keep other keys if possible
-                            config = { ...TB_CONFIG_DEFAULT };
-                        }
-                    } else {
-                        // Create fresh config with complete structure
-                        config = { ...TB_CONFIG_DEFAULT };
-                    }
-                
-                    // Deduplicate
-                    if (config.modules.indexOf(moduleStr) !== -1) {
-                        return wsConn.send(wsConn.Event(Events.AddTBModule, {
-                            status: 'duplicate',
-                            modules: config.modules
-                        }));
-                    }
-                
-                    config.modules.push(moduleStr);
-                    try {
-                        writeFileSync(TB_CONFIG, JSON.stringify(config, null, 4));
-                        wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'success', modules: config.modules }));
-                    } catch (e) {
-                        wsConn.send(wsConn.Event(Events.AddTBModule, { status: 'error', message: e.message }));
-                    }
-                    break;
-                }
-                
-                case Events.RemoveTBModule: {
-                    // payload: { module: string }
-                    const TB_CONFIG = '/home/owner/share/tizenbrewConfig.json';
-                    if (!existsSync(TB_CONFIG)) {
-                        return wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'notFound' }));
-                    }
-                    let config;
-                    try {
-                        config = JSON.parse(readFileSync(TB_CONFIG, 'utf8'));
-                    } catch (e) {
-                        return wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'error', message: e.message }));
-                    }
-                    if (!Array.isArray(config.modules)) config.modules = [];
-                
-                    const idx = config.modules.indexOf(payload.module);
-                    if (idx !== -1) config.modules.splice(idx, 1);
-                
-                    // If autoLaunchModule pointed at the removed module, clear it
-                    if (config.autoLaunchModule === payload.module) config.autoLaunchModule = '';
-                
-                    try {
-                        writeFileSync(TB_CONFIG, JSON.stringify(config, null, 4));
-                        wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'success', modules: config.modules }));
-                    } catch (e) {
-                        wsConn.send(wsConn.Event(Events.RemoveTBModule, { status: 'error', message: e.message }));
-                    }
-                    break;
-                }
+
                 default: {
                     wsConn.send(wsConn.Event(Events.Error, 'Invalid event type.'));
                     break;
@@ -464,24 +343,16 @@ module.exports.onStart = function () {
     });
 
     const appAccess = express();
-
     appAccess.use(express.urlencoded({ extended: false }));
-
     appAccess.use((request, response) => {
         if (request.method !== 'GET') {
             const body = JSON.parse(request.body.code);
-            const accessInfo = {
-                accessToken: body.access_token,
-                userId: body.userId
-            };
-
-            // Randomly generate a password
+            const accessInfo = { accessToken: body.access_token, userId: body.userId };
             const password = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-4);
-
             const authorInfo = {
                 name: 'TizenBrew',
                 email: body.inputEmailID,
-                password: password,
+                password,
                 privilegeLevel: 'Partner'
             };
 
@@ -493,7 +364,7 @@ module.exports.onStart = function () {
                         currentConfig.distributorCert = Buffer.from(certificate.distributorCert, 'binary').toString('base64');
                         currentConfig.password = password;
                         if (isTV) {
-                            if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive(`/home/owner/share/tmp/sdk_tools`);
+                            if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive('/home/owner/share/tmp/sdk_tools');
                             writeFileSync('/home/owner/share/tmp/sdk_tools/device-profile.xml', certificate.distributorXML);
                         } else {
                             PushFile(adbClient, '/home/owner/share/tmp/sdk_tools/device-profile.xml', Buffer.from(certificate.distributorXML, 'utf8'), () => {
@@ -501,21 +372,15 @@ module.exports.onStart = function () {
                             });
                         }
                         writeConfig(currentConfig);
-                        if (wsClient) {
-                            wsClient.send(wsClient.Event(Events.InstallPackage, { response: 1 }));
-                        }
+                        if (wsClient) wsClient.send(wsClient.Event(Events.InstallPackage, { response: 1 }));
                         response.status(200).send('Certificate creation was successful. You can now close this window.');
                     })
-                    .catch(err => {
-                        response.status(500).json({ error: err.message });
-                    });
+                    .catch(err => { response.status(500).json({ error: err.message }); });
             }
 
             if (isTV) {
                 if (!adbClient && !isConnected) {
-                    createAdbConnection().then(adbClient => {
-                        createCert(adbClient);
-                    }).catch(err => {
+                    createAdbConnection().then(adbClient => createCert(adbClient)).catch(err => {
                         response.status(500).json({ error: err.message });
                     });
                 } else createCert(adbClient);
@@ -526,6 +391,6 @@ module.exports.onStart = function () {
     });
 
     appAccess.listen(4794);
-}
+};
 
 !isTV && module.exports.onStart();
