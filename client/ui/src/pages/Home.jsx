@@ -96,7 +96,7 @@ export default function Home() {
         const retries = [60, 180, 420, 900];
         retries.forEach(delay => {
             setTimeout(() => {
-                if (window.location.pathname === '/ui/dist/index.html' && !document.querySelector('.focus')) {
+                if (window.location.pathname === '/ui/dist/index.html' || window.location.pathname === '/ui/dist/index.html/') {
                     setFocus('home-card-install');
                 }
             }, delay);
