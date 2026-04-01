@@ -13,6 +13,11 @@ export default function InstallFromGitHub() {
     // Only install when the user explicitly confirmed with Enter/OK
     const confirmedRef = useRef(false);
 
+    function markConfirmedAndBlur() {
+        confirmedRef.current = true;
+        inputRef.current?.blur();
+    }
+
     useEffect(() => {
         inputRef.current.focus();
     }, [inputRef]);
@@ -32,29 +37,40 @@ export default function InstallFromGitHub() {
         <div className="relative isolate lg:px-8">
             <div className="mx-auto flex flex-wrap justify-center gap-4 top-4 relative">
                 <Item>
-                    <input
-                        type="text"
-                        ref={inputRef}
-                        value={name}
-                        className="w-full p-2 rounded-lg bg-gray-800 text-gray-200"
-                        onChange={(e) => setName(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.keyCode === 13 || e.keyCode === 65376) {
-                                // Mark as confirmed BEFORE blur fires
-                                confirmedRef.current = true;
-                                inputRef.current.blur();
-                            }
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            markConfirmedAndBlur();
                         }}
-                        onBlur={() => {
-                            if (confirmedRef.current) {
-                                confirmedRef.current = false;
-                                confirm();
-                            }
-                            // If blur was from keyboard close / back button: do nothing,
-                            // let the user navigate away with the back key normally.
-                        }}
-                        placeholder="owner/repo"
-                    />
+                    >
+                        <input
+                            type="password"
+                            ref={inputRef}
+                            value={name}
+                            className="w-full p-2 rounded-lg bg-gray-800 text-gray-200"
+                            onChange={(e) => setName(e.target.value)}
+                            onKeyDown={(e) => {
+                                // Different TV firmware versions emit different Enter/Fertig key codes.
+                                if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 65376 || e.keyCode === 29443) {
+                                    markConfirmedAndBlur();
+                                }
+                            }}
+                            onKeyUp={(e) => {
+                                if (e.key === 'Enter' || e.keyCode === 13 || e.keyCode === 65376 || e.keyCode === 29443) {
+                                    markConfirmedAndBlur();
+                                }
+                            }}
+                            onBlur={() => {
+                                if (confirmedRef.current) {
+                                    confirmedRef.current = false;
+                                    confirm();
+                                }
+                                // If blur was from keyboard close / back button: do nothing,
+                                // let the user navigate away with the back key normally.
+                            }}
+                            placeholder="owner/repo"
+                        />
+                    </form>
                     <p className="mt-3 text-sm text-slate-400">Press OK to confirm and install</p>
                 </Item>
             </div>
