@@ -17,6 +17,8 @@
     "resigning": {
         "resigningRequired": "Hersigneren vereist",
         "resigningRequiredDesc": "Vanaf Tizen 7 moeten alle pakketten hersigned worden met een Samsung Certificate.\nScan de QR-code om in te loggen op uw Samsung-account en kopieer de JSON-antwoord die u krijgt na inloggen.",
+        "resigningRequiredPCDesc": "Vanaf Tizen 7 moeten alle pakketten opnieuw worden gesigneerd met een Samsung-certificaat.\nKlik op de onderstaande knop om in te loggen op uw Samsung-account.",
+        "resigningRequiredOpenAuthButton": "Inloggen op Samsung-account",
         "resigningRequiredAccessInfo": "Nadat u het JSON-antwoord hebt gekopieerd, ga naar http://{{ip}}:4794 en plak het in het tekstveld en druk op de \"Submit\" Knop.",
         "resigningDeviceSameNetwork": "Zorg ervoor dat uw apparaat op het zelfde netwerk is als uw TV."
     },
@@ -26,7 +28,26 @@
         "installFromUSB": "Installeren van USB",
         "installFromGH": "Installeren van GitHub",
         "installingAgain": "TizenBrew Installer is geinstalleerd als een USB Demo Package. Het zal nu worden geinstalleerd als een normaal pakket.",
-        "alreadyInstalled": "TizenBrew Installer als een USB Demo Package is geinstalleerd. U kunt het nu verwijderen."
+        "alreadyInstalled": "TizenBrew Installer als een USB Demo Package is geinstalleerd. U kunt het nu verwijderen.",
+        "install": "{{label}} installeren",
+        "update": "{{label}} bijwerken",
+        "installedVersion": "Geïnstalleerd: {{version}}",
+        "versionUnknown": "Versie: onbekend (aangepaste repo)",
+        "installTBI": "TizenBrew Installer installeren",
+        "connectToTV": "Verbinden met TV"
+    },
+    "installerDesktop": {
+        "sdbConnectionRefused": "Kan geen verbinding maken met de SDB Daemon. Zorg ervoor dat de TV aan staat en het IP-adres correct is.",
+        "sdbConnectionReset": "Kan geen verbinding maken met de SDB Daemon. U hebt de Host PC IP mogelijk niet ingesteld op het IP van dit apparaat, of de TV niet correct opnieuw opgestart. Houd de aan/uit-knop ingedrukt tot het Samsung-logo verschijnt."
+    },
+    "savedRepos": {
+        "button": "Opgeslagen repos",
+        "desc": "{{count}} opgeslagen repo('s)",
+        "active": "Actief",
+        "pageTitle": "Opgeslagen repos",
+        "pageDesc": "Selecteer een repo om deze actief te maken. Gebruik ◀▶ voor Installeren / Verwijderen.",
+        "empty": "Nog geen opgeslagen repos. Installeer vanuit GitHub om er een toe te voegen.",
+        "hint": "◀▶ actie wisselen  |  OK = bevestigen  |  ▲▼ repo wisselen"
     },
     "__contributors": [
         "owen-the-kid"
