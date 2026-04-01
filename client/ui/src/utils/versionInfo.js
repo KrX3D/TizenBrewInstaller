@@ -129,7 +129,7 @@ export function fetchLatestReleaseInfo(repo) {
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timeoutId = setTimeout(function() {
         if (controller) controller.abort();
-    }, 6000);
+    }, 15000);
 
     return fetch('https://api.github.com/repos/' + normalized + '/releases/latest', controller ? { signal: controller.signal } : undefined)
         .then(function(res) {
