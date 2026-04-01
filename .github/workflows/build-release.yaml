@@ -38,6 +38,14 @@ jobs:
             fi
           fi
           echo "RELEASE_VERSION=$TAG" >> $GITHUB_ENV
+
+      - name: Determine source branch for release notes
+        run: |
+          BRANCH=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin --contains "$GITHUB_SHA" | sed 's#^origin/##' | grep -v '^HEAD$' | head -n1)
+          if [ -z "$BRANCH" ]; then
+            BRANCH="unknown (tag build)"
+          fi
+          echo "SOURCE_BRANCH=$BRANCH" >> $GITHUB_ENV
       
       - name: Install ldid (required system tool)
         uses: MOZGIII/install-ldid-action@v1
@@ -83,6 +91,9 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
           target_commitish: ${{ github.sha }}
+          body: |
+            Built from branch: `${{ env.SOURCE_BRANCH }}`
+            Commit: `${{ github.sha }}`
           files: |
             client/release/*
 
@@ -96,5 +107,8 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
           target_commitish: ${{ github.sha }}
+          body: |
+            Built from branch: `${{ env.SOURCE_BRANCH }}`
+            Commit: `${{ github.sha }}`
           files: |
             client/dist/*
