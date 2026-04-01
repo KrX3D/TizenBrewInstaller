@@ -38,21 +38,6 @@
         "sdbConnectionRefused": "Could not connect to the SDB Daemon. Make sure that the TV is on and that the IP is correct.",
         "sdbConnectionReset": "Could not connect to the SDB Daemon. Either you haven't set the Host PC IP to this device's IP, or you didn't restart the TV properly. Hold the power button till you see the Samsung logo to restart the TV."
     },
-    "tizenBrewConfig": {
-        "checkButton": "Check TB Config",
-        "checkDesc": "Check if tizenbrewConfig.json exists and its permissions.",
-        "resetButton": "Reset TB Config",
-        "resetDesc": "Delete tizenbrewConfig.json — TizenBrew will recreate it on next launch.",
-        "notFound": "tizenbrewConfig.json was not found.",
-        "fileInfo": "tizenbrewConfig.json\nSize: {{sizeKb}} KB  •  Permissions: {{permStr}}\nLast modified: {{mtime}}",
-        "readable": "readable",
-        "writable": "writable",
-        "noPermissions": "no permissions",
-        "statError": "Could not stat tizenbrewConfig.json: {{error}}",
-        "resetSuccess": "tizenbrewConfig.json deleted successfully.",
-        "permissionDenied": "Cannot delete tizenbrewConfig.json — permission denied.",
-        "resetError": "Failed to delete tizenbrewConfig.json: {{error}}"
-    },
     "savedRepos": {
         "button": "Saved Repos",
         "desc": "{{count}} saved repo(s)",
@@ -61,24 +46,6 @@
         "pageDesc": "Select a repo to set it active. Use ◀▶ to reach Install / Delete.",
         "empty": "No saved repos yet. Install from GitHub to add one.",
         "hint": "◀▶ switch action  |  OK = confirm  |  ▲▼ switch repo"
-    },
-    "tbModules": {
-        "homeButton": "Manage Modules",
-        "homeDesc": "Add or remove TizenBrew modules in tizenbrewConfig.json.",
-        "pageTitle": "Manage Modules",
-        "pageDesc": "Modules are loaded by TizenBrew on next launch.",
-        "empty": "No modules installed yet.",
-        "addTitle": "Add a module",
-        "addHint": "Enter the full module string, e.g. npm/@foxreis/tizentube or gh/user/repo",
-        "inputPlaceholder": "npm/@foxreis/tizentube",
-        "addButton": "Add module",
-        "addSuccess": "Module added successfully.",
-        "duplicate": "That module is already in the list.",
-        "addError": "Failed to add module: {{error}}",
-        "removeSuccess": "Module removed.",
-        "removeError": "Failed to remove module: {{error}}",
-        "loadError": "Could not load modules: {{error}}",
-        "hint": "Navigate to input row and press OK to open keyboard  |  OK on module row = remove"
     },
     "__contributors": [
         "reisxd"

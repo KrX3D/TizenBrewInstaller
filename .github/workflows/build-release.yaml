@@ -38,6 +38,23 @@ jobs:
             fi
           fi
           echo "RELEASE_VERSION=$TAG" >> $GITHUB_ENV
+
+      - name: Determine source branch for release notes
+        run: |
+          BRANCH=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin --contains "$GITHUB_SHA" | sed 's#^origin/##' | grep -v '^HEAD$' | head -n1)
+          if [ -z "$BRANCH" ]; then
+            BRANCH="unknown (tag build)"
+          fi
+          echo "SOURCE_BRANCH=$BRANCH" >> $GITHUB_ENV
+
+      - name: Determine app metadata for release notes
+        run: |
+          APP_ID=$(sed -n 's/.*<tizen:application[^>]*id="\([^"]*\)".*/\1/p' client/config.xml | head -n1)
+          APP_NAME=$(echo "$APP_ID" | sed -n 's/^[^.]*\.\(.*\)$/\1/p')
+          if [ -z "$APP_ID" ]; then APP_ID="unknown"; fi
+          if [ -z "$APP_NAME" ]; then APP_NAME="unknown"; fi
+          echo "APP_ID=$APP_ID" >> $GITHUB_ENV
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
       
       - name: Install ldid (required system tool)
         uses: MOZGIII/install-ldid-action@v1
@@ -83,6 +100,10 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
           target_commitish: ${{ github.sha }}
+          body: |
+            Built from branch: `${{ env.SOURCE_BRANCH }}`
+            Commit: `${{ github.sha }}`
+            TBI_METADATA: {"appId":"${{ env.APP_ID }}","appName":"${{ env.APP_NAME }}"}
           files: |
             client/release/*
 
@@ -96,5 +117,9 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
           target_commitish: ${{ github.sha }}
+          body: |
+            Built from branch: `${{ env.SOURCE_BRANCH }}`
+            Commit: `${{ github.sha }}`
+            TBI_METADATA: {"appId":"${{ env.APP_ID }}","appName":"${{ env.APP_NAME }}"}
           files: |
             client/dist/*
