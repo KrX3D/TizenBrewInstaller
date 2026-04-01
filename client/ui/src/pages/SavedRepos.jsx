@@ -130,6 +130,10 @@ export default function SavedRepos() {
     // undefined means still loading
     const [versionMap, setVersionMap] = useState({});
 
+    // versionMap: { [repo]: { latestVersion, installedVersion, updateAvailable } | undefined }
+    // undefined means still loading
+    const [versionMap, setVersionMap] = useState({});
+
     useEffect(() => {
         const activeIndex = repoList.indexOf(tizenBrewRepo);
         const targetKey = `repo-row-${activeIndex >= 0 ? activeIndex : 0}`;
