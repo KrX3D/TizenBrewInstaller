@@ -38,21 +38,26 @@ export default function Home() {
     const [latestSource, setLatestSource] = useState('unavailable');
     const [loadingLatest, setLoadingLatest] = useState(false);
 
+    // Only start the version fetch once the WebSocket client is confirmed alive,
+    // and wait 2 s before the first attempt so the network stack has time to settle
+    // (especially important after a cold reboot on Tizen).
     useEffect(() => {
-        if (!activeRepo) return;
+        if (!activeRepo || !context.state.client) return;
+
         setLatestVersion(null);
         setLatestSource('unavailable');
         setLoadingLatest(true);
 
         let cancelled = false;
+        let timer = null;
+
         function loadLatest(attempt) {
             fetchLatestVersionInfo(activeRepo)
                 .then(info => {
                     if (cancelled) return;
 
-                    // Avoid immediate "offline" warning on startup; retry a few times first.
                     if ((info.latestSource || 'unavailable') === 'unavailable' && attempt < 2) {
-                        setTimeout(() => loadLatest(attempt + 1), 2500);
+                        timer = setTimeout(() => loadLatest(attempt + 1), 3000);
                         return;
                     }
 
@@ -63,16 +68,23 @@ export default function Home() {
                 .catch(() => {
                     if (cancelled) return;
                     if (attempt < 2) {
-                        setTimeout(() => loadLatest(attempt + 1), 2500);
+                        timer = setTimeout(() => loadLatest(attempt + 1), 3000);
                     } else {
                         setLoadingLatest(false);
                     }
                 });
         }
 
-        loadLatest(0);
-        return () => { cancelled = true; };
-    }, [activeRepo, versionRefreshTick]);
+        // 2 s grace period: lets the service finish starting and gives the TV
+        // network stack time to come up before we hit the GitHub API.
+        timer = setTimeout(() => loadLatest(0), 2000);
+
+        return () => {
+            cancelled = true;
+            if (timer) clearTimeout(timer);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeRepo, versionRefreshTick, context.state.client]);
 
     const updateAvailable = isUpdateAvailable(installedVersion, latestVersion);
 
@@ -156,7 +168,7 @@ export default function Home() {
                     {loadingLatest && !latestVersion && (
                         <p className="text-xs text-slate-500 mt-1">Checking latest version...</p>
                     )}
-                    {!loadingLatest && !latestVersion && (
+                    {!loadingLatest && !latestVersion && latestSource === 'unavailable' && (
                         <p className="text-xs text-amber-400 mt-1">Could not check latest version online.</p>
                     )}
                     {!isKnownRepo(activeRepo) && (

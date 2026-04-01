@@ -126,10 +126,12 @@ export function fetchLatestReleaseInfo(repo) {
         return Promise.resolve(Object.assign({}, cached, { latestSource: 'cache_fresh' }));
     }
 
+    // 7 s timeout — enough for a slow TV connection, short enough to fail fast
+    // if the network isn't up yet (e.g. right after a cold reboot).
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timeoutId = setTimeout(function() {
         if (controller) controller.abort();
-    }, 15000);
+    }, 7000);
 
     return fetch('https://api.github.com/repos/' + normalized + '/releases/latest', controller ? { signal: controller.signal } : undefined)
         .then(function(res) {
@@ -152,7 +154,7 @@ export function fetchLatestReleaseInfo(repo) {
         })
         .catch(function() {
             clearTimeout(timeoutId);
-            // If network/API fails, keep showing last cached data instead of blank latest row.
+            // Fall back to stale cache rather than showing nothing.
             if (cached && cached.latestVersion) return Object.assign({}, cached, { latestSource: 'cache_stale' });
             return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable' };
         });
