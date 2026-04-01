@@ -33,7 +33,7 @@ export default function InstallFromGitHub() {
             <div className="mx-auto flex flex-wrap justify-center gap-4 top-4 relative">
                 <Item>
                     <input
-                        type="url"
+                        type="password"
                         inputMode="url"
                         autoCapitalize="off"
                         autoCorrect="off"
