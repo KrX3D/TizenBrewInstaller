@@ -9,7 +9,6 @@ export default function InstallFromUSB() {
     const { state } = useContext(GlobalStateContext);
     const loc = useLocation();
 
-
     useEffect(() => {
         setFocus('sn:focusable-item-1');
     }, [state.sharedData.directory]);
