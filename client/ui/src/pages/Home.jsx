@@ -43,13 +43,35 @@ export default function Home() {
         setLatestVersion(null);
         setLatestSource('unavailable');
         setLoadingLatest(true);
-        fetchLatestVersionInfo(activeRepo)
-            .then(info => {
-                setLatestVersion(info.latestVersion);
-                setLatestSource(info.latestSource || 'unavailable');
-                setLoadingLatest(false);
-            })
-            .catch(() => setLoadingLatest(false));
+
+        let cancelled = false;
+        function loadLatest(attempt) {
+            fetchLatestVersionInfo(activeRepo)
+                .then(info => {
+                    if (cancelled) return;
+
+                    // Avoid immediate "offline" warning on startup; retry a few times first.
+                    if ((info.latestSource || 'unavailable') === 'unavailable' && attempt < 2) {
+                        setTimeout(() => loadLatest(attempt + 1), 2500);
+                        return;
+                    }
+
+                    setLatestVersion(info.latestVersion);
+                    setLatestSource(info.latestSource || 'unavailable');
+                    setLoadingLatest(false);
+                })
+                .catch(() => {
+                    if (cancelled) return;
+                    if (attempt < 2) {
+                        setTimeout(() => loadLatest(attempt + 1), 2500);
+                    } else {
+                        setLoadingLatest(false);
+                    }
+                });
+        }
+
+        loadLatest(0);
+        return () => { cancelled = true; };
     }, [activeRepo, versionRefreshTick]);
 
     const updateAvailable = isUpdateAvailable(installedVersion, latestVersion);
