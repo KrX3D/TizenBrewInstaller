@@ -117,7 +117,7 @@ jobs:
           if [ -z "$APP_NAME" ]; then APP_NAME="unknown"; fi
           echo "APP_ID=$APP_ID" >> $GITHUB_ENV
           echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
-
+      
       - name: Install ldid (required system tool)
         uses: MOZGIII/install-ldid-action@v1
         with:

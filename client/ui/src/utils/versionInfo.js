@@ -116,17 +116,23 @@ export function fetchLatestReleaseInfo(repo) {
     }
 
     var cached = readCachedReleaseInfo(repo);
-    var MAX_CACHE_AGE_MS = 5 * 60 * 1000;
+    var MAX_CACHE_AGE_MS = 15 * 60 * 1000;
     if (cached && cached.latestVersion && cached.cachedAt && (Date.now() - cached.cachedAt) < MAX_CACHE_AGE_MS) {
         return Promise.resolve(cached);
     }
 
-    return fetch('https://api.github.com/repos/' + normalized + '/releases/latest')
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeoutId = setTimeout(function() {
+        if (controller) controller.abort();
+    }, 6000);
+
+    return fetch('https://api.github.com/repos/' + normalized + '/releases/latest', controller ? { signal: controller.signal } : undefined)
         .then(function(res) {
             if (!res.ok) return null;
             return res.json();
         })
         .then(function(data) {
+            clearTimeout(timeoutId);
             if (!data) return { latestVersion: null, appId: null, appName: null };
             var metadata = parseMetadataFromReleaseBody(data.body || '');
             var out = {
@@ -138,7 +144,12 @@ export function fetchLatestReleaseInfo(repo) {
             writeCachedReleaseInfo(repo, out);
             return out;
         })
-        .catch(function() { return { latestVersion: null, appId: null, appName: null }; });
+        .catch(function() {
+            clearTimeout(timeoutId);
+            // If network/API fails, keep showing last cached data instead of blank latest row.
+            if (cached && cached.latestVersion) return cached;
+            return { latestVersion: null, appId: null, appName: null };
+        });
 }
 
 export function clearReleaseInfoCacheForMissingRepos(repoList) {
