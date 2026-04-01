@@ -1,6 +1,3 @@
-import { REPO_NAME_TO_PACKAGE_ID } from './knownApps.js';
-export { REPO_NAME_TO_PACKAGE_ID };
-
 export function normalizeRepo(repo) {
     if (!repo) return '';
     return repo.trim()
@@ -19,16 +16,16 @@ export function repoLabel(repo) {
 }
 
 export function isKnownRepo(repo) {
-    return !!REPO_NAME_TO_PACKAGE_ID[normalizeRepo(repo).split('/').pop()];
+    return normalizeRepo(repo).split('/').length >= 2;
 }
 
 export function getInstalledVersion(repo) {
     if (typeof tizen === 'undefined') return null;
-    var repoName = normalizeRepo(repo).split('/').pop();
-    var pkgId = REPO_NAME_TO_PACKAGE_ID[repoName];
-    if (!pkgId) return null;
+    var cached = readCachedReleaseInfo(repo);
+    var appId = cached && cached.appId ? cached.appId : null;
+    if (!appId) return null;
     try {
-        return tizen.application.getAppInfo(pkgId).version;
+        return tizen.application.getAppInfo(appId).version;
     } catch (_) {
         return null;
     }
@@ -57,7 +54,10 @@ export function isUpdateAvailable(installedVersion, latestVersion) {
 export function fetchAllVersionInfo(repoList) {
     return Promise.all(repoList.map(function(repo) {
         return fetchLatestReleaseInfo(repo).then(function(info) {
-            var installedVersion = getInstalledVersion(repo);
+            var installedVersion = null;
+            if (typeof tizen !== 'undefined' && info.appId) {
+                try { installedVersion = tizen.application.getAppInfo(info.appId).version; } catch (_) {}
+            }
             return {
                 repo: repo,
                 latestVersion: info.latestVersion,
