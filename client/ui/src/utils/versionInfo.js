@@ -116,7 +116,10 @@ export function fetchLatestReleaseInfo(repo) {
     }
 
     var cached = readCachedReleaseInfo(repo);
-    if (cached && cached.latestVersion) return Promise.resolve(cached);
+    var MAX_CACHE_AGE_MS = 5 * 60 * 1000;
+    if (cached && cached.latestVersion && cached.cachedAt && (Date.now() - cached.cachedAt) < MAX_CACHE_AGE_MS) {
+        return Promise.resolve(cached);
+    }
 
     return fetch('https://api.github.com/repos/' + normalized + '/releases/latest')
         .then(function(res) {
@@ -129,7 +132,8 @@ export function fetchLatestReleaseInfo(repo) {
             var out = {
                 latestVersion: data.tag_name ? data.tag_name.replace(/^v/, '') : null,
                 appId: metadata.appId,
-                appName: metadata.appName
+                appName: metadata.appName,
+                cachedAt: Date.now()
             };
             writeCachedReleaseInfo(repo, out);
             return out;
