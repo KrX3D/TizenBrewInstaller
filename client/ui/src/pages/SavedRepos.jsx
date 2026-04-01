@@ -5,7 +5,7 @@ import { useFocusable, setFocus } from '@noriginmedia/norigin-spatial-navigation
 import { CheckCircleIcon, TrashIcon, ArrowDownIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
 import { Events } from '../components/WebSocketClient.js';
-import { fetchAllVersionInfo, isUpdateAvailable } from '../utils/versionInfo.js';
+import { fetchAllVersionInfo, isUpdateAvailable, clearReleaseInfoCacheForMissingRepos } from '../utils/versionInfo.js';
 
 const COL_NAME    = 0;
 const COL_INSTALL = 1;
@@ -137,6 +137,7 @@ export default function SavedRepos() {
 
     useEffect(() => {
         if (repoList.length === 0) return;
+        clearReleaseInfoCacheForMissingRepos(repoList);
         // Set all to undefined (loading) first
         const loading = {};
         repoList.forEach(r => { loading[r] = undefined; });
