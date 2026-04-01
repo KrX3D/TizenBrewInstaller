@@ -116,7 +116,7 @@ export function fetchLatestReleaseInfo(repo) {
     }
 
     var cached = readCachedReleaseInfo(repo);
-    var MAX_CACHE_AGE_MS = 15 * 60 * 1000;
+    var MAX_CACHE_AGE_MS = 5 * 60 * 1000;
     if (cached && cached.latestVersion && cached.cachedAt && (Date.now() - cached.cachedAt) < MAX_CACHE_AGE_MS) {
         return Promise.resolve(cached);
     }
