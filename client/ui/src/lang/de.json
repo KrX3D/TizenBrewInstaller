@@ -1,0 +1,53 @@
+{
+    "service": {
+        "alreadyRunning": "Dienst läuft bereits.",
+        "started": "Dienst gestartet."
+    },
+    "errors": {
+        "debuggingNotEnabled": "Fehler: Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Hast du die Host-PC-IP auf 127.0.0.1 gesetzt? Wenn ja, halte die Ein/Aus-Taste gedrückt, bis das Samsung-Logo erscheint."
+    },
+    "installStatus": {
+        "fetching": "Paket wird abgerufen",
+        "resigning": "Paket wird neu signiert",
+        "parsing": "Paket wird analysiert",
+        "installing": "Paket wird installiert",
+        "installed": "Paket installiert",
+        "installFailed": "Installation fehlgeschlagen: {{line}}"
+    },
+    "resigning": {
+        "resigningRequired": "Neusignierung erforderlich",
+        "resigningRequiredDesc": "Ab Tizen 7 müssen alle Pakete mit einem Samsung-Zertifikat neu signiert werden.\nBitte scanne den QR-Code, um dich bei deinem Samsung-Konto anzumelden, und kopiere anschließend die JSON-Antwort.",
+        "resigningRequiredPCDesc": "Ab Tizen 7 müssen alle Pakete mit einem Samsung-Zertifikat neu signiert werden.\nBitte klicke auf die Schaltfläche unten, um dich bei deinem Samsung-Konto anzumelden.",
+        "resigningRequiredOpenAuthButton": "Bei Samsung-Konto anmelden",
+        "resigningRequiredAccessInfo": "Nach dem Kopieren der JSON-Antwort gehe zu http://{{ip}}:4794, füge sie in das Eingabefeld ein und klicke auf \"Submit\".",
+        "resigningDeviceSameNetwork": "Stelle sicher, dass dein Gerät im gleichen Netzwerk wie dein Fernseher ist."
+    },
+    "installer": {
+        "install": "{{label}} installieren",
+        "update": "{{label}} aktualisieren",
+        "installedVersion": "Installiert: {{version}}",
+        "versionUnknown": "Version: unbekannt (benutzerdefiniertes Repo)",
+        "installTBI": "TizenBrew Installer installieren",
+        "connectToTV": "Mit TV verbinden",
+        "installFromUSB": "Von USB installieren",
+        "installFromGH": "Von GitHub installieren",
+        "installingAgain": "TizenBrew Installer ist als USB-Demo-Paket installiert und wird jetzt als normales Paket neu installiert.",
+        "alreadyInstalled": "TizenBrew Installer als USB-Demo-Paket ist installiert. Du kannst es jetzt deinstallieren."
+    },
+    "installerDesktop": {
+        "sdbConnectionRefused": "Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Stelle sicher, dass der Fernseher eingeschaltet ist und die IP-Adresse korrekt ist.",
+        "sdbConnectionReset": "Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Entweder wurde die Host-PC-IP nicht auf die IP dieses Geräts gesetzt, oder der Fernseher wurde nicht korrekt neu gestartet. Halte die Ein/Aus-Taste gedrückt, bis das Samsung-Logo erscheint."
+    },
+    "savedRepos": {
+        "button": "Gespeicherte Repos",
+        "desc": "{{count}} gespeichertes Repo(s)",
+        "active": "Aktiv",
+        "pageTitle": "Gespeicherte Repos",
+        "pageDesc": "Repo auswählen zum Aktivieren. ◀▶ für Installieren / Löschen.",
+        "empty": "Noch keine gespeicherten Repos. Von GitHub installieren, um eines hinzuzufügen.",
+        "hint": "◀▶ Aktion wechseln  |  OK = bestätigen  |  ▲▼ Repo wechseln"
+    },
+    "__contributors": [
+        "krx3d"
+    ]
+}
