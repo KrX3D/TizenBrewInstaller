@@ -17,6 +17,8 @@
     "resigning": {
         "resigningRequired": "App cần được sign lại",
         "resigningRequiredDesc": "Từ Tizen 7.0 (2023) trở lên, tất cả gói (file) cài đặt phải được sign lại với một chứng chỉ Samsung được tạo bằng tài khoản Samsung của bạn.\nVui lòng quét mã QR hiển thị bên dưới bằng thiết bị di động của bạn để đăng nhập, sau đó copy (sao chép) toàn bộ đoạn mã JSON trả về hiển thị trên màn hình.",
+        "resigningRequiredPCDesc": "Từ Tizen 7.0 trở lên, tất cả gói cài đặt phải được ký lại bằng chứng chỉ Samsung.\nVui lòng nhấn nút bên dưới để đăng nhập vào tài khoản Samsung.",
+        "resigningRequiredOpenAuthButton": "Đăng nhập tài khoản Samsung",
         "resigningRequiredAccessInfo": "Sau khi copy đoạn mã JSON, truy cập http://{{ip}}:4794 trong trình duyệt trên thiết bị di động của bạn và paste (dán) vào phần điền thông tin và nhấn nút \"Submit\".",
         "resigningDeviceSameNetwork": "Thiết bị di động và TV của bạn cần được kết nối chung 1 mạng Wi-Fi/LAN để đảm bảo hoạt động."
     },
@@ -26,7 +28,26 @@
         "installFromUSB": "Cài đặt app từ USB",
         "installFromGH": "Cài đặt app từ GitHub",
         "installingAgain": "TizenBrew Installer đã được cài đặt dưới dạng USB Demo Package. Bây giờ app sẽ tự cài lại như 1 app bình thường.",
-        "alreadyInstalled": "TizenBrew Installer dưới dạng USB Demo Package đang được cài đặt. Bây giờ bạn có thể gỡ cài đặt gói Demo này."
+        "alreadyInstalled": "TizenBrew Installer dưới dạng USB Demo Package đang được cài đặt. Bây giờ bạn có thể gỡ cài đặt gói Demo này.",
+        "install": "Cài đặt {{label}}",
+        "update": "Cập nhật {{label}}",
+        "installedVersion": "Đã cài: {{version}}",
+        "versionUnknown": "Phiên bản: không xác định (repo tùy chỉnh)",
+        "installTBI": "Cài đặt TizenBrew Installer",
+        "connectToTV": "Kết nối với TV"
+    },
+    "installerDesktop": {
+        "sdbConnectionRefused": "Không thể kết nối đến SDB Daemon. Hãy đảm bảo TV đang bật và địa chỉ IP chính xác.",
+        "sdbConnectionReset": "Không thể kết nối đến SDB Daemon. Bạn chưa đặt Host PC IP thành IP của thiết bị này, hoặc chưa khởi động lại TV đúng cách. Giữ nút nguồn cho đến khi logo Samsung hiển thị."
+    },
+    "savedRepos": {
+        "button": "Repo đã lưu",
+        "desc": "{{count}} repo đã lưu",
+        "active": "Đang dùng",
+        "pageTitle": "Repo đã lưu",
+        "pageDesc": "Chọn một repo để kích hoạt. Dùng ◀▶ để Cài đặt / Xóa.",
+        "empty": "Chưa có repo nào được lưu. Cài đặt từ GitHub để thêm.",
+        "hint": "◀▶ đổi hành động  |  OK = xác nhận  |  ▲▼ đổi repo"
     },
     "__contributors": [
         "AXTRplayer (Intel Core i5-8350u)"

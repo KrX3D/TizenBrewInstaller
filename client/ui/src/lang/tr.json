@@ -30,11 +30,24 @@
         "installFromUSB": "USB'den Kur",
         "installFromGH": "GitHub'dan Kur",
         "installingAgain": "TizenBrew Installer, USB Demo paketi olarak yüklüdür. Şimdi normal paket olarak yeniden yüklenecektir.",
-        "alreadyInstalled": "TizenBrew Installer, USB Demo paketi olarak yüklüdür. Şimdi USB Demo paketini kaldırabilirsiniz."
+        "alreadyInstalled": "TizenBrew Installer, USB Demo paketi olarak yüklüdür. Şimdi USB Demo paketini kaldırabilirsiniz.",
+        "install": "{{label}} Kur",
+        "update": "{{label}} Güncelle",
+        "installedVersion": "Kurulu: {{version}}",
+        "versionUnknown": "Sürüm: bilinmiyor (özel repo)"
     },
     "installerDesktop": {
         "sdbConnectionRefused": "SDB Daemon'a bağlanılamadı. TV'nin açık olduğundan ve IP'nin doğru olduğundan emin olun.",
         "sdbConnectionReset": "SDB Daemon'a bağlanılamadı. Ya Host PC IP'sini bu cihazın IP'si olarak ayarlamadınız ya da TV'yi düzgün bir şekilde yeniden başlatmadınız. TV'yi yeniden başlatmak için Samsung logosunu görene kadar güç düğmesini basılı tutun."
+    },
+    "savedRepos": {
+        "button": "Kayıtlı Repolar",
+        "desc": "{{count}} kayıtlı repo",
+        "active": "Aktif",
+        "pageTitle": "Kayıtlı Repolar",
+        "pageDesc": "Aktif hale getirmek için bir repo seçin. Kur / Sil için ◀▶ kullanın.",
+        "empty": "Henüz kayıtlı repo yok. Eklemek için GitHub'dan yükleyin.",
+        "hint": "◀▶ eylem değiştir  |  OK = onayla  |  ▲▼ repo değiştir"
     },
     "__contributors": [
         "reisxd"

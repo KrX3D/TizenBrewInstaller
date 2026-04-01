@@ -13,17 +13,12 @@ class Connection {
 }
 
 const Events = {
-    InstallPackage:         1,
-    NavigateDirectory:      2,
-    Error:                  3,
-    InstallationStatus:     4,
-    DeleteConfiguration:    5,
-    ConnectToTV:            6,
-    CheckTizenBrewConfig:   7,
-    ResetTizenBrewConfig:   8,
-    GetTBModules:           9,
-    AddTBModule:            10,
-    RemoveTBModule:         11,
+    InstallPackage:           1,
+    NavigateDirectory:        2,
+    Error:                    3,
+    InstallationStatus:       4,
+    DeleteConfiguration:      5,
+    ConnectToTV:              6,
 };
 
 module.exports = { Connection, Events };
