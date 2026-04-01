@@ -14,7 +14,7 @@ function Button({ children, route, focus, focusKey }) {
         focusKey,
         onEnterPress: goToRoute,
         onArrowPress: (dir) => {
-            if (dir === 'down' && window.location.pathname === '/ui/dist/index.html') {
+            if (dir === 'down' && (window.location.pathname === '/ui/dist/index.html' || window.location.pathname === '/ui/dist/index.html/')) {
                 setFocus('home-card-install');
                 return false;
             }

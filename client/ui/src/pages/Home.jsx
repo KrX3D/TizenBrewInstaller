@@ -6,6 +6,7 @@ import SignInQrCode from '../assets/signInQrCode.png';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'preact-iso';
 import { Events } from '../components/WebSocketClient.js';
+import { setFocus } from '@noriginmedia/norigin-spatial-navigation';
 import {
     repoLabel,
     isKnownRepo,
@@ -63,6 +64,17 @@ export default function Home() {
             } catch (_) {}
         }
     }, [context.state.client]);
+
+    useEffect(() => {
+        const retries = [60, 180, 420, 900];
+        retries.forEach(delay => {
+            setTimeout(() => {
+                if (window.location.pathname === '/ui/dist/index.html' || window.location.pathname === '/ui/dist/index.html/') {
+                    setFocus('home-card-install');
+                }
+            }, delay);
+        });
+    }, []);
 
     return (
         <div className="relative isolate lg:px-8 pt-6">
