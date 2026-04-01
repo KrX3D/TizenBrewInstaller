@@ -11,7 +11,7 @@ const COL_NAME    = 0;
 const COL_INSTALL = 1;
 const COL_DELETE  = 2;
 
-function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete, versionInfo }) {
+function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete, versionInfo, clientReady }) {
     const { t } = useTranslation();
     const [col, setCol] = useState(COL_NAME);
 
@@ -103,10 +103,11 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete, vers
                 )}
             </div>
 
-            {/* Install button */}
+            {/* Install button — dimmed while client not ready */}
             <div className={[
                 'flex items-center justify-center w-10 h-10 rounded-lg flex-shrink-0 transition-all',
                 hasUpdate ? 'bg-amber-600' : 'bg-indigo-700',
+                !clientReady ? 'opacity-40' : '',
                 'text-white',
                 ring(COL_INSTALL)
             ].join(' ')}>
@@ -127,6 +128,8 @@ export default function SavedRepos() {
     const { t } = useTranslation();
     const { repoList, tizenBrewRepo } = state.sharedData;
     const versionRefreshTick = state.sharedData.versionRefreshTick || 0;
+
+    const clientReady = !!(state.client && state.client.socket && state.client.socket.readyState === WebSocket.OPEN);
 
     // versionMap: { [repo]: { latestVersion, installedVersion, updateAvailable } | undefined }
     // undefined means still loading
@@ -160,6 +163,8 @@ export default function SavedRepos() {
     }
 
     function installRepo(repo) {
+        // Guard: client may not be ready yet if the user navigated here fast
+        if (!state.client) return;
         dispatch({ type: 'SET_TIZENBREW_REPO', payload: repo });
         state.client.send({ type: Events.InstallPackage, payload: { url: repo } });
         loc.route('/ui/dist/index.html');
@@ -190,6 +195,7 @@ export default function SavedRepos() {
                             isActive={repo === tizenBrewRepo}
                             focusKey={`repo-row-${i}`}
                             versionInfo={versionMap[repo]}
+                            clientReady={clientReady}
                             onSelect={() => selectRepo(repo)}
                             onInstall={() => installRepo(repo)}
                             onDelete={() => removeRepo(repo)}

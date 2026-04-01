@@ -13,19 +13,27 @@ export default function InstallFromUSB() {
         setFocus('sn:focusable-item-1');
     }, [state.sharedData.directory]);
 
+    // Guard: only send NavigateDirectory once the client is actually connected.
+    // If the user navigated here before the WebSocket was ready, this effect
+    // re-fires automatically when the client becomes available.
     useEffect(() => {
+        if (!state.client) return;
+
         state.client.send({
             type: Events.NavigateDirectory,
             payload: '/media'
         });
 
         setFocus('sn:focusable-item-1');
-    }, []);
+    }, [state.client]); // re-runs when client goes from null → connected
 
     return (
         <div className="min-h-screen flex flex-col items-center px-2 pt-8">
             <h1 className="text-3xl font-bold text-indigo-400 mb-8 text-center w-full">Install From USB</h1>
             <div className="w-full max-w-2xl rounded-lg shadow-md p-6 bg-slate-900 flex flex-col items-center">
+                {!state.client && (
+                    <p className="text-slate-500 text-sm py-6">Waiting for service...</p>
+                )}
                 <ul className="space-y-3 w-full">
                     {state.sharedData.directory.map((file, idx) => {
                         return (
@@ -34,6 +42,7 @@ export default function InstallFromUSB() {
                                 file={file}
                                 index={idx}
                                 onClick={() => {
+                                    if (!state.client) return;
                                     if (file.isDirectory) {
                                         state.client.send({
                                             type: Events.NavigateDirectory,
