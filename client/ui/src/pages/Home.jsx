@@ -29,6 +29,7 @@ export default function Home() {
     if (!isTizenApiAvailable) loc.route('/ui/dist/index.html/desktop');
 
     const activeRepo = context.state.sharedData.tizenBrewRepo;
+    const versionRefreshTick = context.state.sharedData.versionRefreshTick || 0;
     const label = repoLabel(activeRepo);
     const installedVersion = getInstalledVersion(activeRepo);
     const installed = installedVersion !== null;
@@ -43,7 +44,7 @@ export default function Home() {
         fetchLatestVersion(activeRepo)
             .then(v => { setLatestVersion(v); setLoadingLatest(false); })
             .catch(() => setLoadingLatest(false));
-    }, [activeRepo]);
+    }, [activeRepo, versionRefreshTick]);
 
     const updateAvailable = isUpdateAvailable(installedVersion, latestVersion);
 

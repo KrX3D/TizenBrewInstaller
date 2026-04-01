@@ -110,10 +110,15 @@ function parseMetadataFromReleaseBody(body) {
 }
 
 export function fetchLatestReleaseInfo(repo) {
+    var normalized = normalizeRepo(repo);
+    if (!normalized || normalized.split('/').length < 2) {
+        return Promise.resolve({ latestVersion: null, appId: null, appName: null });
+    }
+
     var cached = readCachedReleaseInfo(repo);
     if (cached && cached.latestVersion) return Promise.resolve(cached);
 
-    return fetch('https://api.github.com/repos/' + repo + '/releases/latest')
+    return fetch('https://api.github.com/repos/' + normalized + '/releases/latest')
         .then(function(res) {
             if (!res.ok) return null;
             return res.json();

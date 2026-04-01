@@ -24,7 +24,8 @@ const initialState = {
         directory: [],
         error: { message: null, dissapear: false },
         qrCodeShow: false,
-        connectedToTV: false
+        connectedToTV: false,
+        versionRefreshTick: 0
     },
     client: null
 };
@@ -46,6 +47,14 @@ function reducer(state, action) {
             return { ...state, sharedData: { ...state.sharedData, qrCodeShow: action.payload } };
         case 'SET_CONNECTED_TO_TV':
             return { ...state, sharedData: { ...state.sharedData, connectedToTV: action.payload } };
+        case 'REFRESH_VERSIONS':
+            return {
+                ...state,
+                sharedData: {
+                    ...state.sharedData,
+                    versionRefreshTick: (state.sharedData.versionRefreshTick || 0) + 1
+                }
+            };
         case 'SET_TIZENBREW_REPO':
             localStorage.setItem('tizenBrewRepo', action.payload);
             return { ...state, sharedData: { ...state.sharedData, tizenBrewRepo: action.payload } };

@@ -124,6 +124,11 @@ export default function SavedRepos() {
     const loc = useLocation();
     const { t } = useTranslation();
     const { repoList, tizenBrewRepo } = state.sharedData;
+    const versionRefreshTick = state.sharedData.versionRefreshTick || 0;
+
+    // versionMap: { [repo]: { latestVersion, installedVersion, updateAvailable } | undefined }
+    // undefined means still loading
+    const [versionMap, setVersionMap] = useState({});
 
     // versionMap: { [repo]: { latestVersion, installedVersion, updateAvailable } | undefined }
     // undefined means still loading
@@ -148,7 +153,7 @@ export default function SavedRepos() {
             results.forEach(r => { map[r.repo] = r; });
             setVersionMap(map);
         });
-    }, [repoList.join(',')]);
+    }, [repoList.join(','), versionRefreshTick]);
 
     function selectRepo(repo) {
         dispatch({ type: 'SET_TIZENBREW_REPO', payload: repo });

@@ -59,6 +59,9 @@ class Client {
             }
             case Events.InstallationStatus: {
                 this.context.dispatch({ type: 'SET_STATE', payload });
+                if (payload === 'installStatus.installed') {
+                    this.context.dispatch({ type: 'REFRESH_VERSIONS' });
+                }
                 break;
             }
             case Events.ConnectToTV: {
