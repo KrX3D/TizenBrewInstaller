@@ -3,7 +3,8 @@ import FrenchLanguage from '../lang/fr.json';
 import SerbianLanguage from '../lang/sr.json';
 import TurkishLanguage from '../lang/tr.json';
 import VietnameseLanguage from '../lang/vi.json';
-import DutchLanguage from '../lang/nl.json'; 
+import DutchLanguage from '../lang/nl.json';
+import GermanLanguage from '../lang/de.json';
 
 const resources = {
   en: {
@@ -23,6 +24,9 @@ const resources = {
   },
   nl: {
     translation: DutchLanguage
+  },
+  de: {
+    translation: GermanLanguage
   }
 };
 

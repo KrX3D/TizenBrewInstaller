@@ -1,34 +1,55 @@
 {
-  "service": {
-    "alreadyRunning": "Le service est déjà en cours d'exécution.",
-    "started": "Service démarré."
-  },
-  "errors": {
-    "debuggingNotEnabled": "Erreur: Impossible de ce connecter au service SDB. Êtes-vous sûr que vous avez mis Host PC IP à 127.0.0.1 ? Si c'est le cas, maintenez le bouton d'alimentation jusqu'à voir le logo Samsung. "
-  },
-  "installStatus": {
-    "fetching": "Récupération du paquet",
-    "resigning": "Signature du paquet",
-    "parsing": "Analyse du paquet",
-    "installing": "Installation du paquet ",
-    "installed": "Paquet installé",
-    "installFailed": "L'installation a échouée : {{line}}"
-  },
-  "resigning": {
-    "resigningRequired": "Le paquet doit être re-signé",
-    "resigningRequiredDesc": "Depuis Tizen 7, tous les paquets doivent être re-signés avec un certificat Samsung.\nVeuillez scanner le QR code pour vous connecter à votre compte Samsung puis copier la réponse JSON obtenue après connexion.",
-    "resigningRequiredAccessInfo": "Après avoir copié la réponse JSON, allez à http://{{ip}}:4794 et collez le dans le champ de texte, puis appuyez sur le bouton \"Submit\".",
-    "resigningDeviceSameNetwork": "Votre appareil doit être sur le même réseau que votre TV."
-  },
-  "installer": {
-    "installTB": "Installer TizenBrew",
-    "updateTB": "Mettre à jour TizenBrew",
-    "installFromUSB": "Installer à partir d'un périphérique USB",
-    "installFromGH": "Installer depuis GitHub",
-    "installingAgain": "TizenBrew Installer est installé en tant que Paquet Démo USB. Il va maintenant être réinstallé en tant que paquet normal.",
-    "alreadyInstalled": "Le Paquet Démo USB de TizenBrew Installer est installé. Vous pouvez maintenant le supprimer."
-  },
-  "__contributors": [
-    "Kiriox94"
-  ]
+    "service": {
+        "alreadyRunning": "Le service est déjà en cours d'exécution.",
+        "started": "Service démarré."
+    },
+    "errors": {
+        "debuggingNotEnabled": "Erreur: Impossible de ce connecter au service SDB. Êtes-vous sûr que vous avez mis Host PC IP à 127.0.0.1 ? Si c'est le cas, maintenez le bouton d'alimentation jusqu'à voir le logo Samsung. "
+    },
+    "installStatus": {
+        "fetching": "Récupération du paquet",
+        "resigning": "Signature du paquet",
+        "parsing": "Analyse du paquet",
+        "installing": "Installation du paquet ",
+        "installed": "Paquet installé",
+        "installFailed": "L'installation a échouée : {{line}}"
+    },
+    "resigning": {
+        "resigningRequired": "Le paquet doit être re-signé",
+        "resigningRequiredDesc": "Depuis Tizen 7, tous les paquets doivent être re-signés avec un certificat Samsung.\nVeuillez scanner le QR code pour vous connecter à votre compte Samsung puis copier la réponse JSON obtenue après connexion.",
+        "resigningRequiredPCDesc": "Depuis Tizen 7, tous les paquets doivent être re-signés avec un certificat Samsung.\nVeuillez cliquer sur le bouton ci-dessous pour vous connecter à votre compte Samsung.",
+        "resigningRequiredOpenAuthButton": "Se connecter au compte Samsung",
+        "resigningRequiredAccessInfo": "Après avoir copié la réponse JSON, allez à http://{{ip}}:4794 et collez le dans le champ de texte, puis appuyez sur le bouton \"Submit\".",
+        "resigningDeviceSameNetwork": "Votre appareil doit être sur le même réseau que votre TV."
+    },
+    "installer": {
+        "installTB": "Installer TizenBrew",
+        "updateTB": "Mettre à jour TizenBrew",
+        "installFromUSB": "Installer à partir d'un périphérique USB",
+        "installFromGH": "Installer depuis GitHub",
+        "installingAgain": "TizenBrew Installer est installé en tant que Paquet Démo USB. Il va maintenant être réinstallé en tant que paquet normal.",
+        "alreadyInstalled": "Le Paquet Démo USB de TizenBrew Installer est installé. Vous pouvez maintenant le supprimer.",
+        "install": "Installer {{label}}",
+        "update": "Mettre à jour {{label}}",
+        "installedVersion": "Installé : {{version}}",
+        "versionUnknown": "Version : inconnue (dépôt personnalisé)",
+        "installTBI": "Installer TizenBrew Installer",
+        "connectToTV": "Connecter à la TV"
+    },
+    "installerDesktop": {
+        "sdbConnectionRefused": "Connexion au SDB Daemon impossible. Assurez-vous que la TV est allumée et que l'adresse IP est correcte.",
+        "sdbConnectionReset": "Connexion au SDB Daemon impossible. Soit vous n'avez pas défini l'IP du PC hôte sur l'IP de cet appareil, soit vous n'avez pas redémarré la TV correctement. Maintenez le bouton d'alimentation jusqu'à voir le logo Samsung."
+    },
+    "savedRepos": {
+        "button": "Dépôts enregistrés",
+        "desc": "{{count}} dépôt(s) enregistré(s)",
+        "active": "Actif",
+        "pageTitle": "Dépôts enregistrés",
+        "pageDesc": "Sélectionnez un dépôt pour l'activer. Utilisez ◀▶ pour Installer / Supprimer.",
+        "empty": "Aucun dépôt enregistré. Installez depuis GitHub pour en ajouter un.",
+        "hint": "◀▶ changer d'action  |  OK = confirmer  |  ▲▼ changer de dépôt"
+    },
+    "__contributors": [
+        "Kiriox94"
+    ]
 }

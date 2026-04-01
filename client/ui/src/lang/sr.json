@@ -17,6 +17,8 @@
     "resigning": {
         "resigningRequired": "Потребно потписивање",
         "resigningRequiredDesc": "Почевши од Tizen 7, сви пакети морају бити потписани Samsung сертификатом.\nСкенирајте QR код да бисте се пријавили на свој Samsung налог, а затим копирајте JSON одговор који добијете након пријављивања.",
+        "resigningRequiredPCDesc": "Почевши од Tizen 7, сви пакети морају бити потписани Samsung сертификатом.\nКликните на дугме испод да бисте се пријавили на свој Samsung налог.",
+        "resigningRequiredOpenAuthButton": "Пријавите се на Samsung налог",
         "resigningRequiredAccessInfo": "Након копирања JSON одговора, идите на http://{{ip}}:4794 и налепите га у поље за унос, а затим притисните \"Submit\" дугме.",
         "resigningDeviceSameNetwork": "Уверите се да је ваш уређај на истој мрежи као и ваш телевизор."
     },
@@ -26,7 +28,26 @@
         "installFromUSB": "Инсталација са USB флешке",
         "installFromGH": "Инсталација са GitHub-а",
         "installingAgain": "TizenBrew Installer је инсталиран као USB Demo пакет. Сада ће бити поново инсталиран као обичан пакет.",
-        "alreadyInstalled": "TizenBrew Installer као USB Demo пакет је инсталиран. Сада га можете деинсталирати."
+        "alreadyInstalled": "TizenBrew Installer као USB Demo пакет је инсталиран. Сада га можете деинсталирати.",
+        "install": "Инсталирај {{label}}",
+        "update": "Ажурирај {{label}}",
+        "installedVersion": "Инсталирано: {{version}}",
+        "versionUnknown": "Верзија: непозната (прилагођени репозиторијум)",
+        "installTBI": "Инсталирај TizenBrew Installer",
+        "connectToTV": "Повежи се са ТВ"
+    },
+    "installerDesktop": {
+        "sdbConnectionRefused": "Није могуће повезати се са SDB Daemon. Проверите да ли је ТВ укључен и да ли је IP адреса тачна.",
+        "sdbConnectionReset": "Није могуће повезати се са SDB Daemon. Или нисте поставили Host PC IP на IP овог уређаја, или ТВ није правилно поново покренут. Задржите дугме за паљење до појаве Samsung лога."
+    },
+    "savedRepos": {
+        "button": "Сачувани репозиторијуми",
+        "desc": "{{count}} сачуван(их) репозиторијума",
+        "active": "Активан",
+        "pageTitle": "Сачувани репозиторијуми",
+        "pageDesc": "Изаберите репозиторијум да га активирате. Користите ◀▶ за Инсталирање / Брисање.",
+        "empty": "Нема сачуваних репозиторијума. Инсталирајте са GitHub-а да бисте додали.",
+        "hint": "◀▶ промени акцију  |  OK = потврди  |  ▲▼ промени репозиторијум"
     },
     "__contributors": [
         "milovanovic"
