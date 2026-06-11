@@ -140,6 +140,86 @@ module.exports.onStart = function () {
                 return wsConn.send(wsConn.Event(Events.Error, `Invalid JSON: ${message}`));
             }
 
+            function parseAndInstall(buffer) {
+                parsePackage(buffer)
+                    .then(pkg => {
+                        wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installing'));
+                        if (isTV) {
+                            if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive(`/home/owner/share/tmp/sdk_tools`);
+                            writeFileSync(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer);
+                        } else {
+                            PushFile(adbClient, `/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer, () => {
+                                installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
+                                    .then(result => {
+                                        wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
+                                        wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                    });
+                            });
+                            return;
+                        }
+
+                        if (payload.url && payload.url === 'reisxd/TizenBrewInstaller' &&
+                            !isTV && existsSync(`${homedir()}/share/tizenbrewInstallerConfig.json`)) {
+                            // Send the existing config to the TV
+                            PushFile(adbClient, '/home/owner/share/tizenbrewInstallerConfig.json', readFileSync(`${homedir()}/share/tizenbrewInstallerConfig.json`), () => {
+                                console.log('Config pushed to TV for Installer');
+                            });
+                        }
+
+                        if (isTizen3 && isTV) {
+                            const result = installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId);
+                            setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
+                            setValue('db/sdk/develop/mode', 'int32', '1');
+                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
+                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                        } else if (isTV) {
+                            createAdbConnection()
+                                .then(adbClient => {
+                                    installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
+                                        .then(result => {
+                                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
+                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                            setTimeout(() => {
+                                                adbClient._stream.end();
+                                                adbClient._stream.destroy();
+                                            }, 5000);
+                                        });
+                                })
+                                .catch(err => {
+                                    wsConn.send(wsConn.Event(Events.Error, err.message.includes('.') ? err.message : `Error creating ADB connection: ${err.message}`));
+                                });
+                        }
+                    })
+                    .catch(err => {
+                        wsConn.send(wsConn.Event(Events.Error, `Error parsing package: ${err.message}`));
+                        console.error(err);
+                    });
+            }
+
+            function resignOrInstall(buffer) {
+                if (isTizen7OrHigher) {
+                    const config = readConfig();
+                    const certificates = {
+                        authorCert: Buffer.from(config.authorCert, 'base64').toString('binary'),
+                        distributorCert: Buffer.from(config.distributorCert, 'base64').toString('binary'),
+                        password: config.password
+                    };
+
+                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.resigning'));
+                    resignPackage(certificates, buffer)
+                        .then(resignedBuffer => {
+                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
+                            parseAndInstall(resignedBuffer);
+                        })
+                        .catch(err => {
+                            wsConn.send(wsConn.Event(Events.Error, `Error resigning package: ${err.message}`));
+                        });
+                } else {
+                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
+                    parseAndInstall(buffer);
+                }
+            }
+
             const { type, payload } = msg;
 
             switch (type) {
@@ -156,72 +236,6 @@ module.exports.onStart = function () {
                         }
                     }
 
-                    function parseAndInstall(buffer) {
-                        parsePackage(buffer)
-                            .then(pkg => {
-                                wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installing'));
-                                if (isTV) {
-                                    if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive('/home/owner/share/tmp/sdk_tools');
-                                    writeFileSync(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer);
-                                } else {
-                                    PushFile(adbClient, `/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer, () => {
-                                        installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
-                                            .then(result => {
-                                                wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                                wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
-                                            })
-                                            .catch(err => {
-                                                wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
-                                            });
-                                    });
-                                    return;
-                                }
-
-                                if (payload.url && payload.url === 'reisxd/TizenBrewInstaller' &&
-                                    !isTV && existsSync(`${homedir()}/share/tizenbrewInstallerConfig.json`)) {
-                                    PushFile(adbClient, '/home/owner/share/tizenbrewInstallerConfig.json', readFileSync(`${homedir()}/share/tizenbrewInstallerConfig.json`), () => {
-                                        console.log('Config pushed to TV for Installer');
-                                    });
-                                }
-
-                                if (isTizen3 && isTV) {
-                                    Promise.resolve(installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId))
-                                        .then(result => {
-                                            setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
-                                            setValue('db/sdk/develop/mode', 'int32', '1');
-                                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
-                                        })
-                                        .catch(err => {
-                                            wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
-                                        });
-                                } else if (isTV) {
-                                    createAdbConnection()
-                                        .then(adbClient => {
-                                            installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
-                                                .then(result => {
-                                                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                                    wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
-                                                    setTimeout(() => {
-                                                        adbClient._stream.end();
-                                                        adbClient._stream.destroy();
-                                                    }, 5000);
-                                                })
-                                                .catch(err => {
-                                                    wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
-                                                });
-                                        })
-                                        .catch(err => {
-                                            wsConn.send(wsConn.Event(Events.Error, err.message.includes('.') ? err.message : `Error creating ADB connection: ${err.message}`));
-                                        });
-                                }
-                            })
-                            .catch(err => {
-                                wsConn.send(wsConn.Event(Events.Error, `Error parsing package: ${err.message}`));
-                                console.error(err);
-                            });
-                    }
-
                     if (payload.url.split('/').length === 2) {
                         wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.fetching'));
                         fetchLatestRelease(payload.url)
@@ -234,23 +248,7 @@ module.exports.onStart = function () {
                                         return res.buffer();
                                     })
                                     .then(buffer => {
-                                        if (isTizen7OrHigher) {
-                                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.resigning'));
-                                            const config = readConfig();
-                                            const certificates = {
-                                                authorCert: Buffer.from(config.authorCert, 'base64').toString('binary'),
-                                                distributorCert: Buffer.from(config.distributorCert, 'base64').toString('binary'),
-                                                password: config.password
-                                            };
-                                            resignPackage(certificates, buffer)
-                                                .then(resignedBuffer => {
-                                                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
-                                                    parseAndInstall(resignedBuffer);
-                                                })
-                                                .catch(err => {
-                                                    wsConn.send(wsConn.Event(Events.Error, `Error resigning package: ${err.message}`));
-                                                });
-                                        } else parseAndInstall(buffer);
+                                        resignOrInstall(buffer)
                                     })
                                     .catch(err => {
                                         wsConn.send(wsConn.Event(Events.Error, `Error fetching release asset: ${err.message}`));
@@ -260,26 +258,7 @@ module.exports.onStart = function () {
                             });
                     } else {
                         const fileBuffer = readFileSync(payload.url);
-                        if (isTizen7OrHigher) {
-                            const config = readConfig();
-                            const certificates = {
-                                authorCert: Buffer.from(config.authorCert, 'base64').toString('binary'),
-                                distributorCert: Buffer.from(config.distributorCert, 'base64').toString('binary'),
-                                password: config.password
-                            };
-                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.resigning'));
-                            resignPackage(certificates, fileBuffer)
-                                .then(resignedBuffer => {
-                                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
-                                    parseAndInstall(resignedBuffer);
-                                })
-                                .catch(err => {
-                                    wsConn.send(wsConn.Event(Events.Error, `Error resigning package: ${err.message}`));
-                                });
-                        } else {
-                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
-                            parseAndInstall(fileBuffer);
-                        }
+                        resignOrInstall(fileBuffer);
                     }
                     break;
                 }
@@ -301,7 +280,10 @@ module.exports.onStart = function () {
                     wsConn.send(wsConn.Event(Events.NavigateDirectory, metadata));
                     break;
                 }
-
+                case Events.InstallFile: {
+                    const fileBuffer = Buffer.from(payload, 'base64');
+                    resignOrInstall(fileBuffer);
+                }
                 case Events.DeleteConfiguration: {
                     let result = deleteConfig();
                     if (!result.success) {
