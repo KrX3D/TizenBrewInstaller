@@ -220,21 +220,30 @@ module.exports.onStart = function () {
                 }
             }
 
+            function checkPrecondition() {
+                if (!isTizen3 && isTV) {
+                    if (canConnectToDevice !== null && !canConnectToDevice) {
+                        wsConn.send(wsConn.Event(Events.Error, 'errors.debuggingNotEnabled'));
+                        return false;
+                    } else if (canConnectToDevice === null) return false;
+                }
+                if (isTizen7OrHigher) {
+                    // Check if we have author and distributor certificates
+                    const config = readConfig();
+                    if (!config.authorCert || !config.distributorCert || !config.password) {
+                        wsConn.send(wsConn.Event(Events.InstallPackage, { response: 2 }));
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
             const { type, payload } = msg;
 
             switch (type) {
                 case Events.InstallPackage: {
-                    if (!isTizen3 && isTV) {
-                        if (canConnectToDevice !== null && !canConnectToDevice) {
-                            return wsConn.send(wsConn.Event(Events.Error, 'errors.debuggingNotEnabled'));
-                        } else if (canConnectToDevice === null) return;
-                    }
-                    if (isTizen7OrHigher) {
-                        const config = readConfig();
-                        if (!config.authorCert || !config.distributorCert || !config.password) {
-                            return wsConn.send(wsConn.Event(Events.InstallPackage, { response: 2 }));
-                        }
-                    }
+                    if (!checkPrecondition()) return;
 
                     if (payload.url.split('/').length === 2) {
                         wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.fetching'));
@@ -281,6 +290,7 @@ module.exports.onStart = function () {
                     break;
                 }
                 case Events.InstallFile: {
+                    if (!checkPrecondition()) return;
                     const fileBuffer = Buffer.from(payload, 'base64');
                     resignOrInstall(fileBuffer);
                 }
