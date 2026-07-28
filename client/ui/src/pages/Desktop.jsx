@@ -44,6 +44,7 @@ export default function Desktop() {
 
     return (
         <div className="relative isolate lg:px-8 xs:overflow-scroll xs:max-h-[90vh] lg:!overflow-visible lg:!max-h-[100%]">
+            <input onChange={onInputChange} type="file" id="realFileInput" style="display: none;" />
             {context.state.sharedData.qrCodeShow && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
                     <div className="p-8 rounded-2xl shadow-2xl max-w-full">
@@ -113,7 +114,6 @@ export default function Desktop() {
                                     {t('installer.selectToInstall')}
                                 </span>
                             </h3>
-                            <input onChange={onInputChange} type="file" id="realFileInput" style="display: none;" />
                         </Item>
                     </>
                 ) : (

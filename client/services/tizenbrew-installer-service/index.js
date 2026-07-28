@@ -1,6 +1,12 @@
 "use strict";
 
 const isTV = typeof tizen !== 'undefined';
+// Required due to svdca.samsungqbe.com certificate expiring and Samsung not doing anything.
+// Also for older Tizen TVs who had their root certificate break.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+// To remove the DeprecationWarning displayed.
+process.removeAllListeners('warning');
 
 module.exports.onStart = function () {
     console.log('Service started');
@@ -38,6 +44,13 @@ module.exports.onStart = function () {
             app.use(express.static(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client`));
         } else app.use(express.static(join(__dirname, '../../')));
     }
+
+    app.get('/ui/dist/index.html/desktop', (_, res) => {
+        if (existsSync(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client`)) {
+            res.sendFile(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client/ui/dist/index.html`);
+        } else res.sendFile((join(__dirname, '../../ui/dist/index.html')));
+    });
+
     let isTizen7OrHigher = isTV && Number(tizen.systeminfo.getCapability('http://tizen.org/feature/platform.version').split('.')[0]) >= 7;
     const isTizen3 = isTV && tizen.systeminfo.getCapability('http://tizen.org/feature/platform.version').startsWith('3.0');
     const wsServer = new WebSocket.Server({ server: app.listen(8091) });
@@ -221,6 +234,12 @@ module.exports.onStart = function () {
                     }
                 }
 
+                if (!isTV && (!adbClient || !isConnected)) {
+                    // Somethings wrong.
+                    wsConn.send(wsConn.Event(Events.ConnectToTV, { success: false }))
+                    return false;
+                }
+
                 return true;
             }
 
@@ -342,7 +361,7 @@ module.exports.onStart = function () {
                 privilegeLevel: 'Partner'
             };
 
-            function createCert(adbClient) {
+            function createCert() {
                 createSamsungCertificate(authorInfo, accessInfo, adbClient, isTV)
                     .then(certificate => {
                         const currentConfig = readConfig();
@@ -371,12 +390,15 @@ module.exports.onStart = function () {
             if (isTV) {
                 if (!adbClient && !isConnected) {
                     createAdbConnection().then(adbClient => {
-                        createCert(adbClient);
+                        createCert();
                     }).catch(err => {
                         response.status(500).json({ error: err.message });
                     });
-                } else createCert(adbClient);
-            } else createCert(adbClient);
+                } else createCert();
+            } else if (!adbClient || !isConnected) {
+                response.send('Connection between the TV and the device was broken. Please reconnect to your TV from the previous page and try again.');
+                if (wsClient) wsClient.send(wsClient.Event(Events.ConnectToTV, { success: false }))
+            } else createCert();
         } else {
             response.send(AccessInfoHTMLPage);
         }
