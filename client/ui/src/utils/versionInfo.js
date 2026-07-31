@@ -99,6 +99,16 @@ function writeCachedReleaseInfo(repo, data) {
     } catch (_) {}
 }
 
+// Fallback for repos whose GitHub releases don't declare TBI_METADATA: trust the
+// appId actually parsed from the package we just installed, so getInstalledVersion
+// still works instead of silently reporting "not installed".
+export function recordInstalledAppId(repo, appId) {
+    if (!repo || !appId) return;
+    var existing = readCachedReleaseInfo(repo) || {};
+    if (existing.appId) return;
+    writeCachedReleaseInfo(repo, Object.assign({}, existing, { appId: appId }));
+}
+
 function parseMetadataFromReleaseBody(body) {
     if (!body || typeof body !== 'string') return { appId: null, appName: null };
     var m = body.match(/TBI_METADATA:\s*(\{.*\})/);

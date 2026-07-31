@@ -165,7 +165,7 @@ module.exports.onStart = function () {
                                 installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
                                     .then(result => {
                                         wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                        wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                        wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result, packageInfo: { appId: pkg.appId } }));
                                     });
                             });
                             return;
@@ -184,14 +184,14 @@ module.exports.onStart = function () {
                             setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
                             setValue('db/sdk/develop/mode', 'int32', '1');
                             wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result, packageInfo: { appId: pkg.appId } }));
                         } else if (isTV) {
                             createAdbConnection()
                                 .then(adbClient => {
                                     installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
                                         .then(result => {
                                             wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result, packageInfo: { appId: pkg.appId } }));
                                             setTimeout(() => {
                                                 adbClient._stream.end();
                                                 adbClient._stream.destroy();
