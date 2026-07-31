@@ -1,6 +1,12 @@
 "use strict";
 
 const isTV = typeof tizen !== 'undefined';
+// Required due to svdca.samsungqbe.com certificate expiring and Samsung not doing anything.
+// Also for older Tizen TVs who had their root certificate break.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+// To remove the DeprecationWarning displayed.
+process.removeAllListeners('warning');
 
 module.exports.onStart = function () {
     console.log('Service started');
@@ -43,6 +49,13 @@ module.exports.onStart = function () {
             app.use(express.static(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client`));
         } else app.use(express.static(join(__dirname, '../../')));
     }
+
+    app.get('/ui/dist/index.html/desktop', (_, res) => {
+        if (existsSync(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client`)) {
+            res.sendFile(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client/ui/dist/index.html`);
+        } else res.sendFile((join(__dirname, '../../ui/dist/index.html')));
+    });
+
     let isTizen7OrHigher = isTV && Number(tizen.systeminfo.getCapability('http://tizen.org/feature/platform.version').split('.')[0]) >= 7;
     const isTizen3 = isTV && tizen.systeminfo.getCapability('http://tizen.org/feature/platform.version').startsWith('3.0');
     const wsServer = new WebSocket.Server({ server: app.listen(8091) });
@@ -140,87 +153,116 @@ module.exports.onStart = function () {
                 return wsConn.send(wsConn.Event(Events.Error, `Invalid JSON: ${message}`));
             }
 
+            function parseAndInstall(buffer) {
+                parsePackage(buffer)
+                    .then(pkg => {
+                        wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installing'));
+                        if (isTV) {
+                            if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive(`/home/owner/share/tmp/sdk_tools`);
+                            writeFileSync(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer);
+                        } else {
+                            PushFile(adbClient, `/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer, () => {
+                                installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
+                                    .then(result => {
+                                        wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
+                                        wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                    });
+                            });
+                            return;
+                        }
+
+                        if (payload.url && payload.url === 'reisxd/TizenBrewInstaller' &&
+                            !isTV && existsSync(`${homedir()}/share/tizenbrewInstallerConfig.json`)) {
+                            // Send the existing config to the TV
+                            PushFile(adbClient, '/home/owner/share/tizenbrewInstallerConfig.json', readFileSync(`${homedir()}/share/tizenbrewInstallerConfig.json`), () => {
+                                console.log('Config pushed to TV for Installer');
+                            });
+                        }
+
+                        if (isTizen3 && isTV) {
+                            const result = installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId);
+                            setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
+                            setValue('db/sdk/develop/mode', 'int32', '1');
+                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
+                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                        } else if (isTV) {
+                            createAdbConnection()
+                                .then(adbClient => {
+                                    installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
+                                        .then(result => {
+                                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
+                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                            setTimeout(() => {
+                                                adbClient._stream.end();
+                                                adbClient._stream.destroy();
+                                            }, 5000);
+                                        });
+                                })
+                                .catch(err => {
+                                    wsConn.send(wsConn.Event(Events.Error, err.message.includes('.') ? err.message : `Error creating ADB connection: ${err.message}`));
+                                });
+                        }
+                    })
+                    .catch(err => {
+                        wsConn.send(wsConn.Event(Events.Error, `Error parsing package: ${err.message}`));
+                        console.error(err);
+                    });
+            }
+
+            function resignOrInstall(buffer) {
+                if (isTizen7OrHigher) {
+                    const config = readConfig();
+                    const certificates = {
+                        authorCert: Buffer.from(config.authorCert, 'base64').toString('binary'),
+                        distributorCert: Buffer.from(config.distributorCert, 'base64').toString('binary'),
+                        password: config.password
+                    };
+
+                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.resigning'));
+                    resignPackage(certificates, buffer)
+                        .then(resignedBuffer => {
+                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
+                            parseAndInstall(resignedBuffer);
+                        })
+                        .catch(err => {
+                            wsConn.send(wsConn.Event(Events.Error, `Error resigning package: ${err.message}`));
+                        });
+                } else {
+                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
+                    parseAndInstall(buffer);
+                }
+            }
+
+            function checkPrecondition() {
+                if (!isTizen3 && isTV) {
+                    if (canConnectToDevice !== null && !canConnectToDevice) {
+                        wsConn.send(wsConn.Event(Events.Error, 'errors.debuggingNotEnabled'));
+                        return false;
+                    } else if (canConnectToDevice === null) return false;
+                }
+                if (isTizen7OrHigher) {
+                    // Check if we have author and distributor certificates
+                    const config = readConfig();
+                    if (!config.authorCert || !config.distributorCert || !config.password) {
+                        wsConn.send(wsConn.Event(Events.InstallPackage, { response: 2 }));
+                        return false;
+                    }
+                }
+
+                if (!isTV && (!adbClient || !isConnected)) {
+                    // Somethings wrong.
+                    wsConn.send(wsConn.Event(Events.ConnectToTV, { success: false }))
+                    return false;
+                }
+
+                return true;
+            }
+
             const { type, payload } = msg;
 
             switch (type) {
                 case Events.InstallPackage: {
-                    if (!isTizen3 && isTV) {
-                        if (canConnectToDevice !== null && !canConnectToDevice) {
-                            return wsConn.send(wsConn.Event(Events.Error, 'errors.debuggingNotEnabled'));
-                        } else if (canConnectToDevice === null) return;
-                    }
-                    if (isTizen7OrHigher) {
-                        const config = readConfig();
-                        if (!config.authorCert || !config.distributorCert || !config.password) {
-                            return wsConn.send(wsConn.Event(Events.InstallPackage, { response: 2 }));
-                        }
-                    }
-
-                    function parseAndInstall(buffer) {
-                        parsePackage(buffer)
-                            .then(pkg => {
-                                wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installing'));
-                                if (isTV) {
-                                    if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive('/home/owner/share/tmp/sdk_tools');
-                                    writeFileSync(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer);
-                                } else {
-                                    PushFile(adbClient, `/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, buffer, () => {
-                                        installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
-                                            .then(result => {
-                                                wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                                wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
-                                            })
-                                            .catch(err => {
-                                                wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
-                                            });
-                                    });
-                                    return;
-                                }
-
-                                if (payload.url && payload.url === 'reisxd/TizenBrewInstaller' &&
-                                    !isTV && existsSync(`${homedir()}/share/tizenbrewInstallerConfig.json`)) {
-                                    PushFile(adbClient, '/home/owner/share/tizenbrewInstallerConfig.json', readFileSync(`${homedir()}/share/tizenbrewInstallerConfig.json`), () => {
-                                        console.log('Config pushed to TV for Installer');
-                                    });
-                                }
-
-                                if (isTizen3 && isTV) {
-                                    Promise.resolve(installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId))
-                                        .then(result => {
-                                            setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
-                                            setValue('db/sdk/develop/mode', 'int32', '1');
-                                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
-                                        })
-                                        .catch(err => {
-                                            wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
-                                        });
-                                } else if (isTV) {
-                                    createAdbConnection()
-                                        .then(adbClient => {
-                                            installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
-                                                .then(result => {
-                                                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                                    wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
-                                                    setTimeout(() => {
-                                                        adbClient._stream.end();
-                                                        adbClient._stream.destroy();
-                                                    }, 5000);
-                                                })
-                                                .catch(err => {
-                                                    wsConn.send(wsConn.Event(Events.Error, `Error installing package: ${err.message}`));
-                                                });
-                                        })
-                                        .catch(err => {
-                                            wsConn.send(wsConn.Event(Events.Error, err.message.includes('.') ? err.message : `Error creating ADB connection: ${err.message}`));
-                                        });
-                                }
-                            })
-                            .catch(err => {
-                                wsConn.send(wsConn.Event(Events.Error, `Error parsing package: ${err.message}`));
-                                console.error(err);
-                            });
-                    }
+                    if (!checkPrecondition()) return;
 
                     if (payload.url.split('/').length === 2) {
                         wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.fetching'));
@@ -234,23 +276,7 @@ module.exports.onStart = function () {
                                         return res.buffer();
                                     })
                                     .then(buffer => {
-                                        if (isTizen7OrHigher) {
-                                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.resigning'));
-                                            const config = readConfig();
-                                            const certificates = {
-                                                authorCert: Buffer.from(config.authorCert, 'base64').toString('binary'),
-                                                distributorCert: Buffer.from(config.distributorCert, 'base64').toString('binary'),
-                                                password: config.password
-                                            };
-                                            resignPackage(certificates, buffer)
-                                                .then(resignedBuffer => {
-                                                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
-                                                    parseAndInstall(resignedBuffer);
-                                                })
-                                                .catch(err => {
-                                                    wsConn.send(wsConn.Event(Events.Error, `Error resigning package: ${err.message}`));
-                                                });
-                                        } else parseAndInstall(buffer);
+                                        resignOrInstall(buffer)
                                     })
                                     .catch(err => {
                                         wsConn.send(wsConn.Event(Events.Error, `Error fetching release asset: ${err.message}`));
@@ -260,26 +286,7 @@ module.exports.onStart = function () {
                             });
                     } else {
                         const fileBuffer = readFileSync(payload.url);
-                        if (isTizen7OrHigher) {
-                            const config = readConfig();
-                            const certificates = {
-                                authorCert: Buffer.from(config.authorCert, 'base64').toString('binary'),
-                                distributorCert: Buffer.from(config.distributorCert, 'base64').toString('binary'),
-                                password: config.password
-                            };
-                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.resigning'));
-                            resignPackage(certificates, fileBuffer)
-                                .then(resignedBuffer => {
-                                    wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
-                                    parseAndInstall(resignedBuffer);
-                                })
-                                .catch(err => {
-                                    wsConn.send(wsConn.Event(Events.Error, `Error resigning package: ${err.message}`));
-                                });
-                        } else {
-                            wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.parsing'));
-                            parseAndInstall(fileBuffer);
-                        }
+                        resignOrInstall(fileBuffer);
                     }
                     break;
                 }
@@ -301,7 +308,11 @@ module.exports.onStart = function () {
                     wsConn.send(wsConn.Event(Events.NavigateDirectory, metadata));
                     break;
                 }
-
+                case Events.InstallFile: {
+                    if (!checkPrecondition()) return;
+                    const fileBuffer = Buffer.from(payload, 'base64');
+                    resignOrInstall(fileBuffer);
+                }
                 case Events.DeleteConfiguration: {
                     let result = deleteConfig();
                     if (!result.success) {
@@ -356,7 +367,7 @@ module.exports.onStart = function () {
                 privilegeLevel: 'Partner'
             };
 
-            function createCert(adbClient) {
+            function createCert() {
                 createSamsungCertificate(authorInfo, accessInfo, adbClient, isTV)
                     .then(certificate => {
                         const currentConfig = readConfig();
@@ -380,11 +391,16 @@ module.exports.onStart = function () {
 
             if (isTV) {
                 if (!adbClient && !isConnected) {
-                    createAdbConnection().then(adbClient => createCert(adbClient)).catch(err => {
+                    createAdbConnection().then(adbClient => {
+                        createCert();
+                    }).catch(err => {
                         response.status(500).json({ error: err.message });
                     });
-                } else createCert(adbClient);
-            } else createCert(adbClient);
+                } else createCert();
+            } else if (!adbClient || !isConnected) {
+                response.send('Connection between the TV and the device was broken. Please reconnect to your TV from the previous page and try again.');
+                if (wsClient) wsClient.send(wsClient.Event(Events.ConnectToTV, { success: false }))
+            } else createCert();
         } else {
             response.send(AccessInfoHTMLPage);
         }
