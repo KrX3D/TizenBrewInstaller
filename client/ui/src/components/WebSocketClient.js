@@ -1,4 +1,5 @@
 import i18next from 'i18next';
+import { recordInstalledAppId } from '../utils/versionInfo.js';
 
 const Events = {
     InstallPackage:           1,
@@ -31,6 +32,11 @@ class Client {
                 if (requiresResigning) {
                     this.context.dispatch({ type: 'SET_QR_CODE', payload: true });
                 } else if (payload.response === 0) {
+                    if (payload.packageInfo?.appId && this.lastInstallUrl && this.lastInstallUrl !== 'reisxd/TizenBrewInstaller') {
+                        recordInstalledAppId(this.lastInstallUrl, payload.packageInfo.appId);
+                        this.context.dispatch({ type: 'REFRESH_VERSIONS' });
+                    }
+
                     const installFailedLine = payload.result.split('\n').find(line => line.includes('install failed'));
                     if (installFailedLine) {
                         this.context.dispatch({
@@ -78,6 +84,7 @@ class Client {
     }
 
     send(data) {
+        if (data.type === Events.InstallPackage) this.lastInstallUrl = data.payload?.url;
         this.socket.send(JSON.stringify(data));
     }
 }
