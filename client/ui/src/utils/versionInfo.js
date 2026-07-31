@@ -55,9 +55,9 @@ export function isUpdateAvailable(installedVersion, latestVersion) {
     return false;
 }
 
-export function fetchAllVersionInfo(repoList) {
+export function fetchAllVersionInfo(repoList, force) {
     return Promise.all(repoList.map(function(repo) {
-        return fetchLatestReleaseInfo(repo).then(function(info) {
+        return fetchLatestReleaseInfo(repo, force).then(function(info) {
             var installedVersion = null;
             if (typeof tizen !== 'undefined' && info.appId) {
                 try { installedVersion = tizen.application.getAppInfo(info.appId).version; } catch (_) {}
@@ -124,7 +124,7 @@ function parseMetadataFromReleaseBody(body) {
     }
 }
 
-export function fetchLatestReleaseInfo(repo) {
+export function fetchLatestReleaseInfo(repo, force) {
     var normalized = normalizeRepo(repo);
     if (!normalized || normalized.split('/').length < 2) {
         return Promise.resolve({ latestVersion: null, appId: null, appName: null });
@@ -132,7 +132,7 @@ export function fetchLatestReleaseInfo(repo) {
 
     var cached = readCachedReleaseInfo(repo);
     var MAX_CACHE_AGE_MS = 5 * 60 * 1000;
-    if (cached && cached.latestVersion && cached.cachedAt && (Date.now() - cached.cachedAt) < MAX_CACHE_AGE_MS) {
+    if (!force && cached && cached.latestVersion && cached.cachedAt && (Date.now() - cached.cachedAt) < MAX_CACHE_AGE_MS) {
         return Promise.resolve(Object.assign({}, cached, { latestSource: 'cache_fresh' }));
     }
 
@@ -154,8 +154,10 @@ export function fetchLatestReleaseInfo(repo) {
             var metadata = parseMetadataFromReleaseBody(data.body || '');
             var out = {
                 latestVersion: data.tag_name ? data.tag_name.replace(/^v/, '') : null,
-                appId: metadata.appId,
-                appName: metadata.appName,
+                // Don't let a release with no TBI_METADATA erase an appId we
+                // already learned locally from actually installing the package.
+                appId: metadata.appId || (cached && cached.appId) || null,
+                appName: metadata.appName || (cached && cached.appName) || null,
                 cachedAt: Date.now(),
                 latestSource: 'online'
             };
