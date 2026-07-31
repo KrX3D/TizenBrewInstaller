@@ -21,7 +21,7 @@ export default function Home() {
     let isTizenBrewInstalled = false;
     let installedVersion = null;
     try {
-        const appInfo = tizen.application.getAppInfo('xvvl3S1bvH.TizenBrewStandalone');
+        const appInfo = tizen.application.getAppInfo(context.state.sharedData.tizenBrewAppId);
         isTizenBrewInstalled = true;
         installedVersion = appInfo.version;
     } catch (e) { }

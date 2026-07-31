@@ -4,6 +4,7 @@ import { useReducer } from 'preact/hooks';
 const initialState = {
     sharedData: {
         tizenBrewRepo: localStorage.getItem('tizenBrewRepo') || 'reisxd/TizenBrew',
+        tizenBrewAppId: localStorage.getItem('tizenBrewAppId') || 'xvvl3S1bvH.TizenBrewStandalone',
         state: null,
         directory: [],
         error: {
@@ -36,6 +37,9 @@ function reducer(state, action) {
         case 'SET_TIZENBREW_REPO':
             localStorage.setItem('tizenBrewRepo', action.payload);
             return { ...state, sharedData: { ...state.sharedData, tizenBrewRepo: action.payload } };
+        case 'SET_TIZENBREW_APP_ID':
+            localStorage.setItem('tizenBrewAppId', action.payload);
+            return { ...state, sharedData: { ...state.sharedData, tizenBrewAppId: action.payload } };
         default:
             return state;
     }
