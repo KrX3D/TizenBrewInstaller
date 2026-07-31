@@ -172,7 +172,16 @@ export default function SavedRepos() {
     }
 
     function removeRepo(repo) {
+        const removedIndex = repoList.indexOf(repo);
         dispatch({ type: 'REMOVE_REPO', payload: repo });
+
+        const remaining = repoList.length - 1;
+        if (remaining <= 0) return;
+        const targetIndex = Math.min(removedIndex, remaining - 1);
+        // Deleting unmounts the focused row; re-focus a remaining one once the
+        // list has re-rendered with its shifted indices (same retry pattern
+        // used elsewhere for post-navigation focus).
+        [40, 120, 260].forEach(delay => setTimeout(() => setFocus(`repo-row-${targetIndex}`), delay));
     }
 
     return (
