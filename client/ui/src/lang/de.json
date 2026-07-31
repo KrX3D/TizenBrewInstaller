@@ -31,6 +31,7 @@
         "connectToTV": "Mit TV verbinden",
         "installFromUSB": "Von USB installieren",
         "installFromGH": "Von GitHub installieren",
+        "selectToInstall": "Datei zur Installation auswählen",
         "installingAgain": "TizenBrew Installer ist als USB-Demo-Paket installiert und wird jetzt als normales Paket neu installiert.",
         "alreadyInstalled": "TizenBrew Installer als USB-Demo-Paket ist installiert. Du kannst es jetzt deinstallieren."
     },
