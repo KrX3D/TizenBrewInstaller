@@ -149,7 +149,7 @@ export default function SavedRepos() {
         repoList.forEach(r => { loading[r] = undefined; });
         setVersionMap(loading);
 
-        fetchAllVersionInfo(repoList).then(results => {
+        fetchAllVersionInfo(repoList, true).then(results => {
             const map = {};
             results.forEach(r => { map[r.repo] = r; });
             setVersionMap(map);
