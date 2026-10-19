@@ -33,7 +33,7 @@ jobs:
       contents: write
     steps:
       - name: Clone repo with full history and tags
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -173,13 +173,13 @@ jobs:
           tizenjs build . -t wgt -o release/TizenBrewInstaller.wgt --author "${GITHUB_WORKSPACE}/tizenbrew-author.p12" --authorPwd '${{ secrets.TIZEN_AUTHOR_KEY_PW }}' -p public --ignore node_modules,/.*\.wgt$/,/userwidget/,/release/
 
       - name: Upload TizenBrew package artifact for Old Tizen
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: app-${{ github.sha }}-old.wgt
           path: client/release/TizenBrewInstaller.wgt
 
       - name: Release TizenBrew Build Results
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
           target_commitish: ${{ github.sha }}
@@ -196,7 +196,7 @@ jobs:
           pkg -C GZip . --no-bytecode --public
 
       - name: Release Installer Desktop
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
           target_commitish: ${{ github.sha }}
