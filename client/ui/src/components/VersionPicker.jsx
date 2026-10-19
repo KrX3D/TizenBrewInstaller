@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { useFocusable, setFocus, FocusContext } from '@noriginmedia/norigin-spatial-navigation';
 import { useTranslation } from 'react-i18next';
 import { fetchReleaseList } from '../utils/versionInfo.js';
@@ -84,8 +84,12 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
             .catch(() => { setLoadingMore(false); setFailed(true); });
     }
 
+    // Initial focus only. Without the guard this also ran after "load more"
+    // (releases changed) and threw focus back to the top of the list.
+    const initialFocusDone = useRef(false);
     useEffect(() => {
-        if (!releases || releases.length === 0) return;
+        if (!releases || releases.length === 0 || initialFocusDone.current) return;
+        initialFocusDone.current = true;
         const installedIdx = releases.findIndex(r => r.version === installedVersion);
         setFocus(`version-opt-${installedIdx >= 0 ? installedIdx : 0}`);
     }, [releases]);
@@ -113,7 +117,8 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
                                 key={r.tag}
                                 focusKey={`version-opt-${i}`}
                                 onPress={() => onPick(r.tag)}
-                                onArrow={(dir) => (dir === 'down' && i === releases.length - 1) ? footerKey : null}
+                                onArrow={(dir) => (dir === 'down' && i === releases.length - 1) ? footerKey
+                                    : (dir === 'up' && i === 0) ? 'version-close' : null}
                             >
                                 <span className="font-mono text-base text-slate-100">{r.tag}</span>
                                 {i === latestIdx && <Badge color="bg-indigo-600">{t('savedRepos.pickerLatest')}</Badge>}
