@@ -3,7 +3,7 @@ name: Build TizenBrew Installer and Release
 on:
   push:
     branches:
-      - new
+      - main
     tags:
       - 'v*.*.*'
     paths-ignore:
@@ -11,7 +11,7 @@ on:
       - 'README.md'
   pull_request:
     branches:
-      - new
+      - main
     paths-ignore:
       - '.github/**'
       - 'README.md'
@@ -69,7 +69,7 @@ jobs:
           git config user.email "github-actions@github.com"
           git add client/config.xml
           git commit -m "chore: bump version to v${NEW_VERSION} [skip ci]"
-          git push origin HEAD:new
+          git push origin HEAD:main
 
           git tag "v${NEW_VERSION}"
           git push origin "v${NEW_VERSION}"
