@@ -152,6 +152,20 @@ jobs:
         run: |
           echo "${{ secrets.TIZEN_AUTHOR_KEY }}" | base64 -d > "${GITHUB_WORKSPACE}/tizenbrew-author.p12"
 
+      # download.tizen.org no longer serves the certificate-generator zip that
+      # tizenjs fetches (404). tizenjs skips that download when this folder
+      # exists, so restore the same files from a private repo secret instead.
+      - name: Restore Tizen certificate-generator files
+        env:
+          TIZEN_CERT_BUNDLE: ${{ secrets.TIZEN_CERT_BUNDLE }}
+        run: |
+          if [ -n "$TIZEN_CERT_BUNDLE" ]; then
+            mkdir -p "$HOME/share/.tizen-cert"
+            echo "$TIZEN_CERT_BUNDLE" | base64 -d | tar -xz -C "$HOME/share/.tizen-cert"
+          else
+            echo "TIZEN_CERT_BUNDLE not set; tizenjs will try to download it."
+          fi
+
       - name: Build TizenBrew
         working-directory: client
         run: |
