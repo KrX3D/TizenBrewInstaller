@@ -110,7 +110,7 @@ jobs:
 
       - name: Determine source branch for release notes
         run: |
-          BRANCH=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin --contains "$GITHUB_SHA" | sed 's#^origin/##' | grep -v '^HEAD$' | head -n1)
+          BRANCH=$(git for-each-ref --format='%(refname:short)' refs/remotes/origin --contains "$GITHUB_SHA" | sed 's#^origin/##' | grep -v -e '^HEAD$' -e '^origin$' | head -n1)
           if [ -z "$BRANCH" ]; then
             BRANCH="unknown (tag build)"
           fi
