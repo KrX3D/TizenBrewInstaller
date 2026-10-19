@@ -54,7 +54,8 @@
         "pickerLatest": "NEUESTE",
         "pickerInstalled": "INSTALLIERT",
         "pickerPrerelease": "VORABVERSION",
-        "pickerClose": "Schließen"
+        "pickerClose": "Schließen",
+        "pickerLoadMore": "Ältere Versionen laden..."
     },
     "__contributors": [
         "krx3d"
