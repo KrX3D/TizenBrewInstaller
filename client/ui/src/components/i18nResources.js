@@ -10,9 +10,6 @@ const resources = {
   en: {
     translation: EnglishLanguage
   },
-  de: {
-    translation: GermanLanguage
-  },
   fr: {
     translation: FrenchLanguage
   },
@@ -27,6 +24,9 @@ const resources = {
   },
   nl: {
     translation: DutchLanguage
+  },
+  de: {
+    translation: GermanLanguage
   }
 };
 

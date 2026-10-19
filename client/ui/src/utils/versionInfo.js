@@ -1,0 +1,257 @@
+export function normalizeRepo(repo) {
+    if (!repo) return '';
+    return repo.trim()
+        .replace(/^https?:\/\/github\.com\//i, '')
+        .replace(/\.git$/i, '')
+        .replace(/^github:/i, '')
+        .replace(/^\/+|\/+$/g, '')
+        .toLowerCase();
+}
+
+export function repoLabel(repo) {
+    if (!repo) return 'TizenBrew';
+    var parts = repo.split('/');
+    var last = parts[parts.length - 1];
+    return last.charAt(0).toUpperCase() + last.slice(1);
+}
+
+export function isKnownRepo(repo) {
+    return normalizeRepo(repo).split('/').length >= 2;
+}
+
+export function getInstalledVersion(repo) {
+    if (typeof tizen === 'undefined') return null;
+    var cached = readCachedReleaseInfo(repo);
+    var appId = cached && cached.appId ? cached.appId : null;
+    if (!appId) return null;
+    try {
+        return tizen.application.getAppInfo(appId).version;
+    } catch (_) {
+        return null;
+    }
+}
+
+export function fetchLatestVersion(repo) {
+    return fetchLatestReleaseInfo(repo).then(function(info) {
+        return info.latestVersion;
+    });
+}
+
+export function fetchLatestVersionInfo(repo) {
+    return fetchLatestReleaseInfo(repo);
+}
+
+// Compares dotted versions numerically. Non-numeric parts ("1.2.3-beta", "v2")
+// are reduced to their leading digits so a pre-release tag doesn't yield NaN
+// (which would silently make every comparison false).
+function versionParts(v) {
+    return String(v).replace(/^v/i, '').split('.').map(function(p) {
+        var n = parseInt(p, 10);
+        return isNaN(n) ? 0 : n;
+    });
+}
+
+export function compareVersions(a, b) {
+    var pa = versionParts(a);
+    var pb = versionParts(b);
+    var len = Math.max(pa.length, pb.length);
+    for (var i = 0; i < len; i++) {
+        var av = pa[i] || 0;
+        var bv = pb[i] || 0;
+        if (av !== bv) return av < bv ? -1 : 1;
+    }
+    return 0;
+}
+
+export function isUpdateAvailable(installedVersion, latestVersion) {
+    if (!installedVersion || !latestVersion) return false;
+    return compareVersions(installedVersion, latestVersion) < 0;
+}
+
+export function fetchAllVersionInfo(repoList, force) {
+    return Promise.all(repoList.map(function(repo) {
+        return fetchLatestReleaseInfo(repo, force).then(function(info) {
+            var installedVersion = null;
+            if (typeof tizen !== 'undefined' && info.appId) {
+                try { installedVersion = tizen.application.getAppInfo(info.appId).version; } catch (_) {}
+            }
+            return {
+                repo: repo,
+                latestVersion: info.latestVersion,
+                appId: info.appId,
+                appName: info.appName,
+                latestSource: info.latestSource,
+                installedVersion: installedVersion,
+                updateAvailable: isUpdateAvailable(installedVersion, info.latestVersion)
+            };
+        });
+    }));
+}
+
+function getCacheKey(repo) {
+    return 'tb-release-meta:' + normalizeRepo(repo);
+}
+
+function readCachedReleaseInfo(repo) {
+    try {
+        if (typeof localStorage === 'undefined') return null;
+        var raw = localStorage.getItem(getCacheKey(repo));
+        if (!raw) return null;
+        var parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return parsed;
+    } catch (_) {
+        return null;
+    }
+}
+
+function writeCachedReleaseInfo(repo, data) {
+    try {
+        if (typeof localStorage === 'undefined') return;
+        localStorage.setItem(getCacheKey(repo), JSON.stringify(data));
+    } catch (_) {}
+}
+
+// Fallback for repos whose GitHub releases don't declare TBI_METADATA: trust the
+// appId actually parsed from the package we just installed, so getInstalledVersion
+// still works instead of silently reporting "not installed".
+export function recordInstalledAppId(repo, appId) {
+    if (!repo || !appId) return;
+    var existing = readCachedReleaseInfo(repo) || {};
+    if (existing.appId) return;
+    writeCachedReleaseInfo(repo, Object.assign({}, existing, { appId: appId }));
+}
+
+function parseMetadataFromReleaseBody(body) {
+    if (!body || typeof body !== 'string') return { appId: null, appName: null };
+    var m = body.match(/TBI_METADATA:\s*(\{.*\})/);
+    if (!m) return { appId: null, appName: null };
+    try {
+        var parsed = JSON.parse(m[1]);
+        return {
+            appId: parsed.appId || null,
+            appName: parsed.appName || null
+        };
+    } catch (_) {
+        return { appId: null, appName: null };
+    }
+}
+
+export function fetchLatestReleaseInfo(repo, force) {
+    var normalized = normalizeRepo(repo);
+    if (!normalized || normalized.split('/').length < 2) {
+        return Promise.resolve({ latestVersion: null, appId: null, appName: null });
+    }
+
+    var cached = readCachedReleaseInfo(repo);
+    var MAX_CACHE_AGE_MS = 5 * 60 * 1000;
+    if (!force && cached && cached.latestVersion && cached.cachedAt && (Date.now() - cached.cachedAt) < MAX_CACHE_AGE_MS) {
+        return Promise.resolve(Object.assign({}, cached, { latestSource: 'cache_fresh' }));
+    }
+
+    // 7 s timeout — enough for a slow TV connection, short enough to fail fast
+    // if the network isn't up yet (e.g. right after a cold reboot).
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeoutId = setTimeout(function() {
+        if (controller) controller.abort();
+    }, 7000);
+
+    return fetch('https://api.github.com/repos/' + normalized + '/releases/latest', controller ? { signal: controller.signal } : undefined)
+        .then(function(res) {
+            if (!res.ok) return null;
+            return res.json();
+        })
+        .then(function(data) {
+            clearTimeout(timeoutId);
+            if (!data) return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable' };
+            var metadata = parseMetadataFromReleaseBody(data.body || '');
+            var out = {
+                latestVersion: data.tag_name ? data.tag_name.replace(/^v/, '') : null,
+                // Don't let a release with no TBI_METADATA erase an appId we
+                // already learned locally from actually installing the package.
+                appId: metadata.appId || (cached && cached.appId) || null,
+                appName: metadata.appName || (cached && cached.appName) || null,
+                cachedAt: Date.now(),
+                latestSource: 'online'
+            };
+            writeCachedReleaseInfo(repo, out);
+            return out;
+        })
+        .catch(function() {
+            clearTimeout(timeoutId);
+            // Fall back to stale cache rather than showing nothing.
+            if (cached && cached.latestVersion) return Object.assign({}, cached, { latestSource: 'cache_stale' });
+            return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable' };
+        });
+}
+
+// Marks every cached "latest version" as stale (keeping the learned appId) so
+// the next non-forced fetch hits GitHub. Used when the app returns from the
+// background: the page stays alive there, so nothing else would re-check.
+export function invalidateReleaseInfoCache() {
+    try {
+        if (typeof localStorage === 'undefined') return;
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (!key || key.indexOf('tb-release-meta:') !== 0) continue;
+            var parsed = JSON.parse(localStorage.getItem(key));
+            if (parsed && parsed.cachedAt) {
+                parsed.cachedAt = 0;
+                localStorage.setItem(key, JSON.stringify(parsed));
+            }
+        }
+    } catch (_) {}
+}
+
+// Lists installable releases (those with a .wgt/.tpk asset), newest first.
+export function fetchReleaseList(repo) {
+    var normalized = normalizeRepo(repo);
+    if (!normalized || normalized.split('/').length < 2) return Promise.resolve([]);
+
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeoutId = setTimeout(function() {
+        if (controller) controller.abort();
+    }, 10000);
+
+    return fetch('https://api.github.com/repos/' + normalized + '/releases?per_page=30', controller ? { signal: controller.signal } : undefined)
+        .then(function(res) {
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
+        .then(function(list) {
+            return (Array.isArray(list) ? list : [])
+                .filter(function(r) {
+                    return !r.draft && r.tag_name && (r.assets || []).some(function(a) {
+                        return /\.(wgt|tpk)$/i.test(a.name);
+                    });
+                })
+                .map(function(r) {
+                    return {
+                        tag: r.tag_name,
+                        version: r.tag_name.replace(/^v/, ''),
+                        prerelease: !!r.prerelease,
+                        publishedAt: r.published_at ? r.published_at.slice(0, 10) : null
+                    };
+                });
+        })
+        .catch(function(err) {
+            clearTimeout(timeoutId);
+            throw err;
+        });
+}
+
+export function clearReleaseInfoCacheForMissingRepos(repoList) {
+    try {
+        if (typeof localStorage === 'undefined') return;
+        var keep = {};
+        repoList.forEach(function(repo) { keep[getCacheKey(repo)] = true; });
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.indexOf('tb-release-meta:') === 0 && !keep[key]) {
+                localStorage.removeItem(key);
+                i--;
+            }
+        }
+    } catch (_) {}
+}

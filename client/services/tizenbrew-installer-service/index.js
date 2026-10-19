@@ -12,9 +12,15 @@ module.exports.onStart = function () {
     console.log('Service started');
     const express = require('express');
     const fetch = require('node-fetch');
+    const https = require('https');
     const adbhost = require('adbhost');
-    const { readConfig, writeConfig } = require('./utils/configuration.js');
-    const { fetchLatestRelease } = require('./utils/GitHubAPI.js')
+    const {
+        readConfig,
+        writeConfig,
+        deleteConfig,
+        tryFixConfigPermissions
+    } = require('./utils/configuration.js');
+    const { fetchRelease } = require('./utils/GitHubAPI.js');
     const { createSamsungCertificate, resignPackage } = require('./utils/SamsungCertificateCreation.js');
     const { writeFileSync, readFileSync, readdirSync, statSync, mkdirSync, existsSync } = require('fs');
     const { setValue } = require('./utils/Buxton2.js');
@@ -38,7 +44,6 @@ module.exports.onStart = function () {
 
     const app = express();
     if (!isTV) {
-        // Enable static file serving for frontend
         console.log('Open up http://localhost:8091/ui/dist/index.html to access the TizenBrew Installer.');
         if (existsSync(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client`)) {
             app.use(express.static(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client`));
@@ -59,7 +64,7 @@ module.exports.onStart = function () {
         fetch('http://127.0.0.1:8001/api/v2/').then(res => res.json())
             .then(json => {
                 canConnectToDevice = (json.device.developerIP === '127.0.0.1' || json.device.developerIP === '1.0.0.127') && json.device.developerMode === '1';
-            }).catch(err => {
+            }).catch(() => {
                 setTimeout(checkCanConnectToDevice, 1000);
             });
     }
@@ -80,7 +85,7 @@ module.exports.onStart = function () {
                 adbClient = adbhost.createConnection({ host: ip || '127.0.0.1', port: 26101 });
                 let hasConnected = false;
                 const waitTimeout = setTimeout(() => {
-                    if (hasConnected) resolve(adbClient)
+                    if (hasConnected) resolve(adbClient);
                 }, 1000);
 
                 adbClient._stream.on('connect', () => {
@@ -117,14 +122,24 @@ module.exports.onStart = function () {
         });
     }
 
-
     function mkdirRecursive(targetDir) {
         if (existsSync(targetDir)) return;
         const parent = dirname(targetDir);
-        if (!existsSync(parent)) {
-            mkdirRecursive(parent);
-        }
+        if (!existsSync(parent)) mkdirRecursive(parent);
         mkdirSync(targetDir);
+    }
+
+    function fetchWithCertFallback(url, options) {
+        return fetch(url, options).catch(err => {
+            const msg = String(err && err.message || err);
+            const certErr = /certificate|unable to get local issuer|self signed/i.test(msg);
+            if (!certErr) throw err;
+            console.warn('[TLS fallback] Retrying download with relaxed certificate validation for:', url);
+            return fetch(url, {
+                ...options,
+                agent: new https.Agent({ rejectUnauthorized: false })
+            });
+        });
     }
 
     wsServer.on('connection', (ws) => {
@@ -133,7 +148,7 @@ module.exports.onStart = function () {
         ws.on('message', (message) => {
             let msg;
             try {
-                msg = JSON.parse(message)
+                msg = JSON.parse(message);
             } catch (e) {
                 return wsConn.send(wsConn.Event(Events.Error, `Invalid JSON: ${message}`));
             }
@@ -150,7 +165,7 @@ module.exports.onStart = function () {
                                 installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
                                     .then(result => {
                                         wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                        wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                        wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result, packageInfo: { appId: pkg.appId } }));
                                     });
                             });
                             return;
@@ -169,14 +184,14 @@ module.exports.onStart = function () {
                             setValue('db/sdk/develop/ip', 'string', '127.0.0.1');
                             setValue('db/sdk/develop/mode', 'int32', '1');
                             wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result, packageInfo: { appId: pkg.appId } }));
                         } else if (isTV) {
                             createAdbConnection()
                                 .then(adbClient => {
                                     installPackage(`/home/owner/share/tmp/sdk_tools/package.${pkg.isWgt ? 'wgt' : 'tpk'}`, pkg.packageId, adbClient)
                                         .then(result => {
                                             wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.installed'));
-                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result }));
+                                            wsConn.send(wsConn.Event(Events.InstallPackage, { response: 0, result, packageInfo: { appId: pkg.appId } }));
                                             setTimeout(() => {
                                                 adbClient._stream.end();
                                                 adbClient._stream.destroy();
@@ -250,13 +265,16 @@ module.exports.onStart = function () {
                     if (!checkPrecondition()) return;
 
                     if (payload.url.split('/').length === 2) {
-                        // GitHub repository
                         wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.fetching'));
-                        fetchLatestRelease(payload.url)
+                        fetchRelease(payload.url, payload.tag)
                             .then(release => {
                                 const asset = release.assets.find(a => a.name.endsWith('.wgt') || a.name.endsWith('.tpk'));
-                                fetch(asset.browser_download_url)
-                                    .then(res => res.buffer())
+                                if (!asset) throw new Error(`No .wgt/.tpk asset found in ${payload.tag ? `release ${payload.tag}` : 'latest release'}.`);
+                                fetchWithCertFallback(asset.browser_download_url)
+                                    .then(res => {
+                                        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                                        return res.buffer();
+                                    })
                                     .then(buffer => {
                                         resignOrInstall(buffer)
                                     })
@@ -267,11 +285,9 @@ module.exports.onStart = function () {
                                 wsConn.send(wsConn.Event(Events.Error, `Error fetching GitHub release: ${err.message}`));
                             });
                     } else {
-                        // USB installation
                         const fileBuffer = readFileSync(payload.url);
                         resignOrInstall(fileBuffer);
                     }
-
                     break;
                 }
 
@@ -286,12 +302,8 @@ module.exports.onStart = function () {
                         const filePath = join(payload, file);
                         try {
                             const stats = statSync(filePath);
-                            metadata.push({
-                                name: file,
-                                path: filePath,
-                                isDirectory: stats.isDirectory()
-                            });
-                        } catch (e) { }
+                            metadata.push({ name: file, path: filePath, isDirectory: stats.isDirectory() });
+                        } catch (e) {}
                     }
                     wsConn.send(wsConn.Event(Events.NavigateDirectory, metadata));
                     break;
@@ -300,16 +312,18 @@ module.exports.onStart = function () {
                     if (!checkPrecondition()) return;
                     const fileBuffer = Buffer.from(payload, 'base64');
                     resignOrInstall(fileBuffer);
-                }
-                case Events.DeleteConfiguration: {
-                    const config = readConfig();
-                    config.authorCert = null;
-                    config.distributorCert = null;
-                    config.password = null;
-                    writeConfig(config);
-                    wsConn.send(wsConn.Event(Events.DeleteConfiguration, null));
                     break;
                 }
+                case Events.DeleteConfiguration: {
+                    let result = deleteConfig();
+                    if (!result.success) {
+                        const fixResult = tryFixConfigPermissions();
+                        if (fixResult.success) result = deleteConfig();
+                    }
+                    wsConn.send(wsConn.Event(Events.DeleteConfiguration, result));
+                    break;
+                }
+
                 case Events.ConnectToTV: {
                     try {
                         createAdbConnection(payload)
@@ -331,6 +345,7 @@ module.exports.onStart = function () {
                     }
                     break;
                 }
+
                 default: {
                     wsConn.send(wsConn.Event(Events.Error, 'Invalid event type.'));
                     break;
@@ -340,24 +355,16 @@ module.exports.onStart = function () {
     });
 
     const appAccess = express();
-
     appAccess.use(express.urlencoded({ extended: false }));
-
     appAccess.use((request, response) => {
         if (request.method !== 'GET') {
             const body = JSON.parse(request.body.code);
-            const accessInfo = {
-                accessToken: body.access_token,
-                userId: body.userId
-            };
-
-            // Randomly generate a password
+            const accessInfo = { accessToken: body.access_token, userId: body.userId };
             const password = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-4);
-
             const authorInfo = {
                 name: 'TizenBrew',
                 email: body.inputEmailID,
-                password: password,
+                password,
                 privilegeLevel: 'Partner'
             };
 
@@ -369,7 +376,7 @@ module.exports.onStart = function () {
                         currentConfig.distributorCert = Buffer.from(certificate.distributorCert, 'binary').toString('base64');
                         currentConfig.password = password;
                         if (isTV) {
-                            if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive(`/home/owner/share/tmp/sdk_tools`);
+                            if (!existsSync('/home/owner/share/tmp/sdk_tools')) mkdirRecursive('/home/owner/share/tmp/sdk_tools');
                             writeFileSync('/home/owner/share/tmp/sdk_tools/device-profile.xml', certificate.distributorXML);
                         } else {
                             PushFile(adbClient, '/home/owner/share/tmp/sdk_tools/device-profile.xml', Buffer.from(certificate.distributorXML, 'utf8'), () => {
@@ -377,14 +384,10 @@ module.exports.onStart = function () {
                             });
                         }
                         writeConfig(currentConfig);
-                        if (wsClient) {
-                            wsClient.send(wsClient.Event(Events.InstallPackage, { response: 1 }));
-                        }
+                        if (wsClient) wsClient.send(wsClient.Event(Events.InstallPackage, { response: 1 }));
                         response.status(200).send('Certificate creation was successful. You can now close this window.');
                     })
-                    .catch(err => {
-                        response.status(500).json({ error: err.message });
-                    });
+                    .catch(err => { response.status(500).json({ error: err.message }); });
             }
 
             if (isTV) {
@@ -405,6 +408,6 @@ module.exports.onStart = function () {
     });
 
     appAccess.listen(4794);
-}
+};
 
 !isTV && module.exports.onStart();

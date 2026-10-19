@@ -23,10 +23,12 @@
         "resigningDeviceSameNetwork": "Make sure your device is on the same network as your TV."
     },
     "installer": {
-        "installTB": "Install TizenBrew",
+        "install": "Install {{label}}",
+        "update": "Update {{label}}",
+        "installedVersion": "Installed: {{version}}",
+        "versionUnknown": "Version: unknown (custom repo)",
         "installTBI": "Install TizenBrew Installer",
         "connectToTV": "Connect to TV",
-        "updateTB": "Update TizenBrew",
         "installFromUSB": "Install from USB",
         "installFromGH": "Install from GitHub",
         "selectToInstall": "Select file to install",
@@ -36,6 +38,23 @@
     "installerDesktop": {
         "sdbConnectionRefused": "Could not connect to the SDB Daemon. Make sure that the TV is on and that the IP is correct.",
         "sdbConnectionReset": "Could not connect to the SDB Daemon. Either you haven't set the Host PC IP to this device's IP, or you didn't restart the TV properly. Hold the power button till you see the Samsung logo to restart the TV."
+    },
+    "savedRepos": {
+        "button": "Saved Repos",
+        "desc": "{{count}} saved repo(s)",
+        "active": "Active",
+        "pageTitle": "Saved Repos",
+        "pageDesc": "Select a repo to set it active. Use ◀▶ to reach Version / Install / Delete.",
+        "empty": "No saved repos yet. Install from GitHub to add one.",
+        "hint": "◀▶ switch action  |  OK = confirm  |  ▲▼ switch repo",
+        "pickerTitle": "Select version to install",
+        "pickerLoading": "Loading versions...",
+        "pickerError": "Could not load versions from GitHub.",
+        "pickerEmpty": "No installable releases found.",
+        "pickerLatest": "LATEST",
+        "pickerInstalled": "INSTALLED",
+        "pickerPrerelease": "PRE-RELEASE",
+        "pickerClose": "Close"
     },
     "__contributors": [
         "reisxd"

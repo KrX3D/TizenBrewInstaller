@@ -44,14 +44,20 @@ function parsePackage(buffer) {
                 return configXmlFile.async('string')
                     .then(xmlString => parser.parseStringPromise(xmlString))
                     .then(result => {
-                        let packageId;
+                        let packageId, appId, version;
                         if (!isWgt) {
                             packageId = result.manifest.$.package;
+                            version = result.manifest.$.version;
+                            appId = result.manifest['ui-application']?.[0]?.$?.appid || packageId;
                         } else {
                             packageId = result.widget['tizen:application'][0].$.package;
+                            appId = result.widget['tizen:application'][0].$.id;
+                            version = result.widget.$.version;
                         }
                         return {
                             packageId,
+                            appId,
+                            version,
                             isWgt
                         };
                     });
