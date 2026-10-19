@@ -2,16 +2,18 @@ import { useContext, useEffect, useState } from 'preact/hooks';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import { useLocation } from 'preact-iso';
 import { useFocusable, setFocus } from '@noriginmedia/norigin-spatial-navigation';
-import { CheckCircleIcon, TrashIcon, ArrowDownIcon } from '@heroicons/react/16/solid';
+import { CheckCircleIcon, TrashIcon, ArrowDownIcon, TagIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
 import { Events } from '../components/WebSocketClient.js';
+import VersionPicker from '../components/VersionPicker.jsx';
 import { fetchAllVersionInfo, isUpdateAvailable, clearReleaseInfoCacheForMissingRepos } from '../utils/versionInfo.js';
 
 const COL_NAME    = 0;
-const COL_INSTALL = 1;
-const COL_DELETE  = 2;
+const COL_VERSION = 1;
+const COL_INSTALL = 2;
+const COL_DELETE  = 3;
 
-function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete, versionInfo, clientReady }) {
+function RepoRow({ repo, isActive, focusKey, onSelect, onPickVersion, onInstall, onDelete, versionInfo, clientReady }) {
     const { t } = useTranslation();
     const [col, setCol] = useState(COL_NAME);
 
@@ -19,6 +21,7 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete, vers
         focusKey,
         onEnterPress: () => {
             if (col === COL_NAME)    onSelect();
+            if (col === COL_VERSION) onPickVersion();
             if (col === COL_INSTALL) onInstall();
             if (col === COL_DELETE)  onDelete();
         },
@@ -38,7 +41,7 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete, vers
 
     function ring(c) {
         if (!focused || col !== c) return '';
-        return c === COL_DELETE ? 'ring-2 ring-red-400' : c === COL_INSTALL ? 'ring-2 ring-indigo-300' : 'ring-2 ring-white';
+        return c === COL_DELETE ? 'ring-2 ring-red-400' : (c === COL_INSTALL || c === COL_VERSION) ? 'ring-2 ring-indigo-300' : 'ring-2 ring-white';
     }
 
     return (
@@ -103,6 +106,15 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onInstall, onDelete, vers
                 )}
             </div>
 
+            {/* Pick a specific version */}
+            <div className={[
+                'flex items-center justify-center w-10 h-10 rounded-lg bg-slate-600 text-white flex-shrink-0 transition-all',
+                !clientReady ? 'opacity-40' : '',
+                ring(COL_VERSION)
+            ].join(' ')}>
+                <TagIcon className="h-5 w-5" />
+            </div>
+
             {/* Install button — dimmed while client not ready */}
             <div className={[
                 'flex items-center justify-center w-10 h-10 rounded-lg flex-shrink-0 transition-all',
@@ -134,6 +146,7 @@ export default function SavedRepos() {
     // versionMap: { [repo]: { latestVersion, installedVersion, updateAvailable } | undefined }
     // undefined means still loading
     const [versionMap, setVersionMap] = useState({});
+    const [pickerIndex, setPickerIndex] = useState(null);
 
     useEffect(() => {
         const activeIndex = repoList.indexOf(tizenBrewRepo);
@@ -162,11 +175,18 @@ export default function SavedRepos() {
         setFocus('sn:focusable-item-1');
     }
 
-    function installRepo(repo) {
+    function closePicker() {
+        const i = pickerIndex;
+        setPickerIndex(null);
+        if (i !== null) setTimeout(() => setFocus(`repo-row-${i}`), 0);
+    }
+
+    // tag is optional: omitted = latest release, set = that specific release
+    function installRepo(repo, tag) {
         // Guard: client may not be ready yet if the user navigated here fast
         if (!state.client) return;
         dispatch({ type: 'SET_TIZENBREW_REPO', payload: repo });
-        state.client.send({ type: Events.InstallPackage, payload: { url: repo } });
+        state.client.send({ type: Events.InstallPackage, payload: tag ? { url: repo, tag } : { url: repo } });
         loc.route('/ui/dist/index.html');
         setFocus('sn:focusable-item-1');
     }
@@ -206,12 +226,22 @@ export default function SavedRepos() {
                             versionInfo={versionMap[repo]}
                             clientReady={clientReady}
                             onSelect={() => selectRepo(repo)}
+                            onPickVersion={() => state.client && setPickerIndex(i)}
                             onInstall={() => installRepo(repo)}
                             onDelete={() => removeRepo(repo)}
                         />
                     ))
                 )}
             </div>
+
+            {pickerIndex !== null && repoList[pickerIndex] && (
+                <VersionPicker
+                    repo={repoList[pickerIndex]}
+                    installedVersion={versionMap[repoList[pickerIndex]]?.installedVersion}
+                    onPick={(tag) => { setPickerIndex(null); installRepo(repoList[pickerIndex], tag); }}
+                    onClose={closePicker}
+                />
+            )}
 
             {repoList.length > 0 && (
                 <p className="mt-4 mb-2 text-slate-500 text-xs text-center">

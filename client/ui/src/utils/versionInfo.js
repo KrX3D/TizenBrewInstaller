@@ -41,18 +41,31 @@ export function fetchLatestVersionInfo(repo) {
     return fetchLatestReleaseInfo(repo);
 }
 
+// Compares dotted versions numerically. Non-numeric parts ("1.2.3-beta", "v2")
+// are reduced to their leading digits so a pre-release tag doesn't yield NaN
+// (which would silently make every comparison false).
+function versionParts(v) {
+    return String(v).replace(/^v/i, '').split('.').map(function(p) {
+        var n = parseInt(p, 10);
+        return isNaN(n) ? 0 : n;
+    });
+}
+
+export function compareVersions(a, b) {
+    var pa = versionParts(a);
+    var pb = versionParts(b);
+    var len = Math.max(pa.length, pb.length);
+    for (var i = 0; i < len; i++) {
+        var av = pa[i] || 0;
+        var bv = pb[i] || 0;
+        if (av !== bv) return av < bv ? -1 : 1;
+    }
+    return 0;
+}
+
 export function isUpdateAvailable(installedVersion, latestVersion) {
     if (!installedVersion || !latestVersion) return false;
-    var a = installedVersion.split('.').map(Number);
-    var b = latestVersion.split('.').map(Number);
-    var len = Math.max(a.length, b.length);
-    for (var i = 0; i < len; i++) {
-        var av = a[i] || 0;
-        var bv = b[i] || 0;
-        if (bv > av) return true;
-        if (bv < av) return false;
-    }
-    return false;
+    return compareVersions(installedVersion, latestVersion) < 0;
 }
 
 export function fetchAllVersionInfo(repoList, force) {
@@ -169,6 +182,62 @@ export function fetchLatestReleaseInfo(repo, force) {
             // Fall back to stale cache rather than showing nothing.
             if (cached && cached.latestVersion) return Object.assign({}, cached, { latestSource: 'cache_stale' });
             return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable' };
+        });
+}
+
+// Marks every cached "latest version" as stale (keeping the learned appId) so
+// the next non-forced fetch hits GitHub. Used when the app returns from the
+// background: the page stays alive there, so nothing else would re-check.
+export function invalidateReleaseInfoCache() {
+    try {
+        if (typeof localStorage === 'undefined') return;
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (!key || key.indexOf('tb-release-meta:') !== 0) continue;
+            var parsed = JSON.parse(localStorage.getItem(key));
+            if (parsed && parsed.cachedAt) {
+                parsed.cachedAt = 0;
+                localStorage.setItem(key, JSON.stringify(parsed));
+            }
+        }
+    } catch (_) {}
+}
+
+// Lists installable releases (those with a .wgt/.tpk asset), newest first.
+export function fetchReleaseList(repo) {
+    var normalized = normalizeRepo(repo);
+    if (!normalized || normalized.split('/').length < 2) return Promise.resolve([]);
+
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeoutId = setTimeout(function() {
+        if (controller) controller.abort();
+    }, 10000);
+
+    return fetch('https://api.github.com/repos/' + normalized + '/releases?per_page=30', controller ? { signal: controller.signal } : undefined)
+        .then(function(res) {
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
+        .then(function(list) {
+            return (Array.isArray(list) ? list : [])
+                .filter(function(r) {
+                    return !r.draft && r.tag_name && (r.assets || []).some(function(a) {
+                        return /\.(wgt|tpk)$/i.test(a.name);
+                    });
+                })
+                .map(function(r) {
+                    return {
+                        tag: r.tag_name,
+                        version: r.tag_name.replace(/^v/, ''),
+                        prerelease: !!r.prerelease,
+                        publishedAt: r.published_at ? r.published_at.slice(0, 10) : null
+                    };
+                });
+        })
+        .catch(function(err) {
+            clearTimeout(timeoutId);
+            throw err;
         });
 }
 

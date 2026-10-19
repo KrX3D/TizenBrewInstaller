@@ -20,7 +20,7 @@ module.exports.onStart = function () {
         deleteConfig,
         tryFixConfigPermissions
     } = require('./utils/configuration.js');
-    const { fetchLatestRelease } = require('./utils/GitHubAPI.js');
+    const { fetchRelease } = require('./utils/GitHubAPI.js');
     const { createSamsungCertificate, resignPackage } = require('./utils/SamsungCertificateCreation.js');
     const { writeFileSync, readFileSync, readdirSync, statSync, mkdirSync, existsSync } = require('fs');
     const { setValue } = require('./utils/Buxton2.js');
@@ -266,10 +266,10 @@ module.exports.onStart = function () {
 
                     if (payload.url.split('/').length === 2) {
                         wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.fetching'));
-                        fetchLatestRelease(payload.url)
+                        fetchRelease(payload.url, payload.tag)
                             .then(release => {
                                 const asset = release.assets.find(a => a.name.endsWith('.wgt') || a.name.endsWith('.tpk'));
-                                if (!asset) throw new Error('No .wgt/.tpk asset found in latest release.');
+                                if (!asset) throw new Error(`No .wgt/.tpk asset found in ${payload.tag ? `release ${payload.tag}` : 'latest release'}.`);
                                 fetchWithCertFallback(asset.browser_download_url)
                                     .then(res => {
                                         if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
@@ -312,6 +312,7 @@ module.exports.onStart = function () {
                     if (!checkPrecondition()) return;
                     const fileBuffer = Buffer.from(payload, 'base64');
                     resignOrInstall(fileBuffer);
+                    break;
                 }
                 case Events.DeleteConfiguration: {
                     let result = deleteConfig();
