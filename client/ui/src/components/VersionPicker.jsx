@@ -3,8 +3,18 @@ import { useFocusable, setFocus, FocusContext } from '@noriginmedia/norigin-spat
 import { useTranslation } from 'react-i18next';
 import { fetchReleaseList } from '../utils/versionInfo.js';
 
-function Option({ focusKey, onPress, children, className }) {
-    const { ref, focused } = useFocusable({ focusKey, onEnterPress: onPress });
+// onArrow(dir) may return a focus key to jump to explicitly. Spatial navigation
+// alone doesn't reliably leave the scrolling list for the buttons below it.
+function Option({ focusKey, onPress, onArrow, children, className }) {
+    const { ref, focused } = useFocusable({
+        focusKey,
+        onEnterPress: onPress,
+        onArrowPress: (dir) => {
+            const target = onArrow && onArrow(dir);
+            if (target) { setFocus(target); return false; }
+            return true;
+        }
+    });
     useEffect(() => {
         if (focused) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, [focused]);
@@ -80,6 +90,9 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
         setFocus(`version-opt-${installedIdx >= 0 ? installedIdx : 0}`);
     }, [releases]);
 
+    const lastKey = releases && releases.length ? `version-opt-${releases.length - 1}` : null;
+    const footerKey = hasMore ? 'version-more' : 'version-close';
+
     const latestIdx = releases ? releases.findIndex(r => !r.prerelease) : -1;
 
     return (
@@ -96,7 +109,12 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
                             <p className="text-slate-400 py-4 text-center">{t('savedRepos.pickerEmpty')}</p>
                         )}
                         {releases && releases.map((r, i) => (
-                            <Option key={r.tag} focusKey={`version-opt-${i}`} onPress={() => onPick(r.tag)}>
+                            <Option
+                                key={r.tag}
+                                focusKey={`version-opt-${i}`}
+                                onPress={() => onPick(r.tag)}
+                                onArrow={(dir) => (dir === 'down' && i === releases.length - 1) ? footerKey : null}
+                            >
                                 <span className="font-mono text-base text-slate-100">{r.tag}</span>
                                 {i === latestIdx && <Badge color="bg-indigo-600">{t('savedRepos.pickerLatest')}</Badge>}
                                 {r.version === installedVersion && <Badge color="bg-emerald-700">{t('savedRepos.pickerInstalled')}</Badge>}
@@ -107,12 +125,20 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
                     </div>
 
                     {hasMore && (
-                        <Option focusKey="version-more" onPress={loadMore} className="justify-center mt-2 mb-0">
+                        <Option
+                            focusKey="version-more"
+                            onPress={loadMore}
+                            onArrow={(dir) => dir === 'up' ? lastKey : dir === 'down' ? 'version-close' : null}
+                            className="justify-center mt-2 mb-0">
                             <span className="text-sky-300">{loadingMore ? t('savedRepos.pickerLoading') : t('savedRepos.pickerLoadMore')}</span>
                         </Option>
                     )}
 
-                    <Option focusKey="version-close" onPress={onClose} className="justify-center mt-2 mb-0">
+                    <Option
+                        focusKey="version-close"
+                        onPress={onClose}
+                        onArrow={(dir) => dir === 'up' ? (hasMore ? 'version-more' : lastKey) : null}
+                        className="justify-center mt-2 mb-0">
                         <span className="text-slate-200">{t('savedRepos.pickerClose')}</span>
                     </Option>
                 </div>
