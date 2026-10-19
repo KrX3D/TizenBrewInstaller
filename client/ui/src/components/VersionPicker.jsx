@@ -33,6 +33,9 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
     const { t } = useTranslation();
     const [releases, setReleases] = useState(null);
     const [failed, setFailed] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const { ref, focusKey } = useFocusable({
         focusKey: 'version-picker',
@@ -48,11 +51,28 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
     useEffect(() => {
         let cancelled = false;
         setFocus('version-close');
-        fetchReleaseList(repo)
-            .then(list => { if (!cancelled) setReleases(list); })
+        fetchReleaseList(repo, 1)
+            .then(r => { if (!cancelled) { setReleases(r.items); setHasMore(r.hasMore); } })
             .catch(() => { if (!cancelled) { setFailed(true); setReleases([]); } });
         return () => { cancelled = true; };
     }, [repo]);
+
+    function loadMore() {
+        if (loadingMore) return;
+        const prevLen = releases.length;
+        setLoadingMore(true);
+        fetchReleaseList(repo, page + 1)
+            .then(r => {
+                // Skip tags already shown (a new release can shift pages).
+                const seen = new Set(releases.map(x => x.tag));
+                setReleases(releases.concat(r.items.filter(x => !seen.has(x.tag))));
+                setHasMore(r.hasMore);
+                setPage(page + 1);
+                setLoadingMore(false);
+                setTimeout(() => setFocus(r.items.length ? `version-opt-${prevLen}` : 'version-close'), 0);
+            })
+            .catch(() => { setLoadingMore(false); setFailed(true); });
+    }
 
     useEffect(() => {
         if (!releases || releases.length === 0) return;
@@ -85,6 +105,12 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
                             </Option>
                         ))}
                     </div>
+
+                    {hasMore && (
+                        <Option focusKey="version-more" onPress={loadMore} className="justify-center mt-2 mb-0">
+                            <span className="text-sky-300">{loadingMore ? t('savedRepos.pickerLoading') : t('savedRepos.pickerLoadMore')}</span>
+                        </Option>
+                    )}
 
                     <Option focusKey="version-close" onPress={onClose} className="justify-center mt-2 mb-0">
                         <span className="text-slate-200">{t('savedRepos.pickerClose')}</span>

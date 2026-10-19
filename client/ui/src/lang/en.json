@@ -54,7 +54,8 @@
         "pickerLatest": "LATEST",
         "pickerInstalled": "INSTALLED",
         "pickerPrerelease": "PRE-RELEASE",
-        "pickerClose": "Close"
+        "pickerClose": "Close",
+        "pickerLoadMore": "Load older versions..."
     },
     "__contributors": [
         "reisxd"

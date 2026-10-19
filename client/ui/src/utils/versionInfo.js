@@ -203,37 +203,45 @@ export function invalidateReleaseInfoCache() {
     } catch (_) {}
 }
 
-// Lists installable releases (those with a .wgt/.tpk asset), newest first.
-export function fetchReleaseList(repo) {
+// Lists installable releases (those with a .wgt/.tpk asset), newest first, one
+// GitHub page at a time. hasMore is based on the raw page size, since filtered
+// releases (drafts, no asset) would otherwise make a full page look like the end.
+export var RELEASES_PER_PAGE = 100;
+
+export function fetchReleaseList(repo, page) {
     var normalized = normalizeRepo(repo);
-    if (!normalized || normalized.split('/').length < 2) return Promise.resolve([]);
+    if (!normalized || normalized.split('/').length < 2) return Promise.resolve({ items: [], hasMore: false });
 
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timeoutId = setTimeout(function() {
         if (controller) controller.abort();
     }, 10000);
 
-    return fetch('https://api.github.com/repos/' + normalized + '/releases?per_page=30', controller ? { signal: controller.signal } : undefined)
+    return fetch('https://api.github.com/repos/' + normalized + '/releases?per_page=' + RELEASES_PER_PAGE + '&page=' + (page || 1), controller ? { signal: controller.signal } : undefined)
         .then(function(res) {
             clearTimeout(timeoutId);
             if (!res.ok) throw new Error('HTTP ' + res.status);
             return res.json();
         })
         .then(function(list) {
-            return (Array.isArray(list) ? list : [])
-                .filter(function(r) {
-                    return !r.draft && r.tag_name && (r.assets || []).some(function(a) {
-                        return /\.(wgt|tpk)$/i.test(a.name);
-                    });
-                })
-                .map(function(r) {
-                    return {
-                        tag: r.tag_name,
-                        version: r.tag_name.replace(/^v/, ''),
-                        prerelease: !!r.prerelease,
-                        publishedAt: r.published_at ? r.published_at.slice(0, 10) : null
-                    };
-                });
+            list = Array.isArray(list) ? list : [];
+            return {
+                hasMore: list.length >= RELEASES_PER_PAGE,
+                items: list
+                    .filter(function(r) {
+                        return !r.draft && r.tag_name && (r.assets || []).some(function(a) {
+                            return /\.(wgt|tpk)$/i.test(a.name);
+                        });
+                    })
+                    .map(function(r) {
+                        return {
+                            tag: r.tag_name,
+                            version: r.tag_name.replace(/^v/, ''),
+                            prerelease: !!r.prerelease,
+                            publishedAt: r.published_at ? r.published_at.slice(0, 10) : null
+                        };
+                    })
+            };
         })
         .catch(function(err) {
             clearTimeout(timeoutId);
