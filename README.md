@@ -27,3 +27,28 @@ If you're using Termux or would like to use TizenBrew Installer Desktop manually
 5. Navigate to the `tizenbrew-installer-service` folder using `cd ../services/tizenbrew-installer-service` and run `npm install`.
 
 6. Run the application using `node .`.
+
+## CI secrets
+
+The release workflow (`.github/workflows/build-release.yaml`) uses these repository secrets (Settings > Secrets and variables > Actions):
+
+| Secret | Used for |
+| --- | --- |
+| `GITHUB_TOKEN` | Provided automatically by GitHub. Pushes the version bump/tag and creates the release. |
+| `TIZEN_AUTHOR_KEY` | Base64 of the author certificate (`.p12`) that signs the `.wgt`. |
+| `TIZEN_AUTHOR_KEY_PW` | Password of that author certificate. |
+| `TIZEN_CERT_BUNDLE` | Base64 `tar.gz` holding `distributor/sdk-public/tizen-distributor-signer.p12` from Tizen Studio. `tizenjs` normally downloads it from `download.tizen.org`, which now returns 404, so the workflow restores it into `~/share/.tizen-cert` instead. |
+
+### Creating `TIZEN_CERT_BUNDLE`
+
+Needs Tizen Studio installed (default path `C:\tizen-studio`). In PowerShell:
+
+```powershell
+tar -czf "$env:TEMP\tizen-cert.tgz" -C "C:\tizen-studio\tools\certificate-generator\certificates" distributor/sdk-public/tizen-distributor-signer.p12
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$env:TEMP\tizen-cert.tgz")) | Set-Clipboard
+(Get-Clipboard).Length
+Remove-Item "$env:TEMP\tizen-cert.tgz"
+```
+
+The printed length should be around 3,300 (GitHub's secret limit is 48,000 characters). Paste the clipboard as the secret value. Only this one file is needed because the build runs `tizenjs` with `-p public`.
+
