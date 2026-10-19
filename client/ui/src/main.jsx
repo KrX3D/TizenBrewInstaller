@@ -22,6 +22,9 @@ window.addEventListener('keydown', (e) => {
         e.preventDefault();
         e.stopPropagation();
 
+        // Overlays (e.g. the version picker) get first refusal on Back.
+        if (typeof window.__backInterceptor === 'function' && window.__backInterceptor()) return;
+
         if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
             document.activeElement.blur();
             return;

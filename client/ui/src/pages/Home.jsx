@@ -75,9 +75,10 @@ export default function Home() {
                 });
         }
 
-        // 2 s grace period: lets the service finish starting and gives the TV
-        // network stack time to come up before we hit the GitHub API.
-        timer = setTimeout(() => loadLatest(0), 2000);
+        // 2 s grace period on first load: lets the service finish starting and
+        // gives the TV network stack time to come up before we hit the GitHub
+        // API. Later refreshes (resume, install finished) go out immediately.
+        timer = setTimeout(() => loadLatest(0), versionRefreshTick === 0 ? 2000 : 0);
 
         return () => {
             cancelled = true;

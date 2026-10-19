@@ -44,9 +44,17 @@
         "desc": "{{count}} gespeichertes Repo(s)",
         "active": "Aktiv",
         "pageTitle": "Gespeicherte Repos",
-        "pageDesc": "Repo auswählen zum Aktivieren. ◀▶ für Installieren / Löschen.",
+        "pageDesc": "Repo auswählen zum Aktivieren. ◀▶ für Version / Installieren / Löschen.",
         "empty": "Noch keine gespeicherten Repos. Von GitHub installieren, um eines hinzuzufügen.",
-        "hint": "◀▶ Aktion wechseln  |  OK = bestätigen  |  ▲▼ Repo wechseln"
+        "hint": "◀▶ Aktion wechseln  |  OK = bestätigen  |  ▲▼ Repo wechseln",
+        "pickerTitle": "Version zur Installation auswählen",
+        "pickerLoading": "Versionen werden geladen...",
+        "pickerError": "Versionen konnten nicht von GitHub geladen werden.",
+        "pickerEmpty": "Keine installierbaren Releases gefunden.",
+        "pickerLatest": "NEUESTE",
+        "pickerInstalled": "INSTALLIERT",
+        "pickerPrerelease": "VORABVERSION",
+        "pickerClose": "Schließen"
     },
     "__contributors": [
         "krx3d"

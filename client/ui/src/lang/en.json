@@ -44,9 +44,17 @@
         "desc": "{{count}} saved repo(s)",
         "active": "Active",
         "pageTitle": "Saved Repos",
-        "pageDesc": "Select a repo to set it active. Use ◀▶ to reach Install / Delete.",
+        "pageDesc": "Select a repo to set it active. Use ◀▶ to reach Version / Install / Delete.",
         "empty": "No saved repos yet. Install from GitHub to add one.",
-        "hint": "◀▶ switch action  |  OK = confirm  |  ▲▼ switch repo"
+        "hint": "◀▶ switch action  |  OK = confirm  |  ▲▼ switch repo",
+        "pickerTitle": "Select version to install",
+        "pickerLoading": "Loading versions...",
+        "pickerError": "Could not load versions from GitHub.",
+        "pickerEmpty": "No installable releases found.",
+        "pickerLatest": "LATEST",
+        "pickerInstalled": "INSTALLED",
+        "pickerPrerelease": "PRE-RELEASE",
+        "pickerClose": "Close"
     },
     "__contributors": [
         "reisxd"

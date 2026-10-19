@@ -14,7 +14,7 @@ import { ExclamationCircleIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
 import Desktop from './pages/Desktop.jsx';
 import { ToastContainer, useToast, setGlobalToast } from './components/Toast.jsx';
-import { fetchAllVersionInfo } from './utils/versionInfo.js';
+import { fetchAllVersionInfo, invalidateReleaseInfoCache } from './utils/versionInfo.js';
 
 export default function App() {
   const headerRef = useRef(null);
@@ -51,26 +51,32 @@ export default function App() {
     if (!repoList || repoList.length === 0) return;
 
     // Delay slightly so the toast system is fully mounted
-    setTimeout(() => {
-      const t = window.__globalToast;
-      if (!t) return;
-
-      fetchAllVersionInfo(repoList).then(results => {
-        const updatable = results.filter(r => r.updateAvailable);
-        if (updatable.length === 0) return;
-
-        updatable.forEach((r, idx) => {
-          setTimeout(() => {
-            const label = r.repo.split('/').pop();
-            t.info(
-              `⬆ Update available: ${label}\nInstalled: ${r.installedVersion}  →  Latest: ${r.latestVersion}\n${r.repo}`,
-              6000
-            );
-          }, idx * 600);
-        });
-      });
-    }, 1200);
+    setTimeout(() => checkForUpdates(repoList), 1200);
   }, [context.state.client]);
+
+  // The Tizen app is usually resumed from the background rather than restarted,
+  // so the page (and its once-per-start version check) stays alive. Re-check
+  // whenever it becomes visible again, bypassing the 5-minute cache.
+  const repoListRef = useRef(context.state.sharedData.repoList);
+  repoListRef.current = context.state.sharedData.repoList;
+  useEffect(() => {
+    let lastResumeAt = Date.now();
+    function onResume() {
+      if (document.hidden) return;
+      const now = Date.now();
+      if (now - lastResumeAt < 5000) return;
+      lastResumeAt = now;
+      invalidateReleaseInfoCache();
+      context.dispatch({ type: 'REFRESH_VERSIONS' });
+      checkForUpdates(repoListRef.current);
+    }
+    document.addEventListener('visibilitychange', onResume);
+    window.addEventListener('focus', onResume);
+    return () => {
+      document.removeEventListener('visibilitychange', onResume);
+      window.removeEventListener('focus', onResume);
+    };
+  }, []);
 
   return (
     <ErrorBoundary>
@@ -98,6 +104,24 @@ export default function App() {
       </LocationProvider>
     </ErrorBoundary>
   );
+}
+
+function checkForUpdates(repoList) {
+  const t = window.__globalToast;
+  if (!t || !repoList || repoList.length === 0) return;
+
+  fetchAllVersionInfo(repoList).then(results => {
+    const updatable = results.filter(r => r.updateAvailable);
+    updatable.forEach((r, idx) => {
+      setTimeout(() => {
+        const label = r.repo.split('/').pop();
+        t.info(
+          `⬆ Update available: ${label}\nInstalled: ${r.installedVersion}  →  Latest: ${r.latestVersion}\n${r.repo}`,
+          6000
+        );
+      }, idx * 600);
+    });
+  });
 }
 
 function startService(context) {
