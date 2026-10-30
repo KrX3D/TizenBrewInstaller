@@ -28,6 +28,21 @@ If you're using Termux or would like to use TizenBrew Installer Desktop manually
 
 6. Run the application using `node .`.
 
+## Repo lists
+
+Instead of typing repos on the TV, keep them in a text/markdown file on GitHub and add it under Saved Repos > Add repo list (e.g. `owner/repo/repos.md`, optional `@branch`; GitHub file URLs also work).
+
+```
+# Comments and blank lines are ignored
+reisxd/TizenBrew
+- KrX3D/TizenTube        # bullets and trailing notes are fine
+someone/else/more-repos.md   # another list: shown nested, removed again if this line is removed
+```
+
+- Lists are synced at startup, when the app is resumed and when Saved Repos opens. Repos that appear are added; repos that disappear are removed.
+- Repos added by hand, and repos you lock (padlock button), are never removed by a sync. A list that can't be loaded is left untouched.
+- Removing a list removes its unlocked repos and any nested lists with them. The eye button disables syncing for a list without removing anything.
+
 ## CI secrets
 
 The release workflow (`.github/workflows/build-release.yaml`) uses these repository secrets (Settings > Secrets and variables > Actions):
@@ -51,4 +66,3 @@ Remove-Item "$env:TEMP\tizen-cert.tgz"
 ```
 
 The printed length should be around 3,300 (GitHub's secret limit is 48,000 characters). Paste the clipboard as the secret value. Only this one file is needed because the build runs `tizenjs` with `-p public`.
-

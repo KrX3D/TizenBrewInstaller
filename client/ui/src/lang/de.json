@@ -7,11 +7,11 @@
         "debuggingNotEnabled": "Fehler: Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Hast du die Host-PC-IP auf 127.0.0.1 gesetzt? Wenn ja, halte die Ein/Aus-Taste gedrückt, bis das Samsung-Logo erscheint."
     },
     "installStatus": {
-        "fetching": "Paket wird abgerufen",
-        "resigning": "Paket wird neu signiert",
-        "parsing": "Paket wird analysiert",
-        "installing": "Paket wird installiert",
-        "installed": "Paket installiert",
+        "fetching": "Paket wird heruntergeladen...",
+        "resigning": "Paket wird signiert...",
+        "parsing": "Paket wird geprüft...",
+        "installing": "Installation läuft... (noch nicht fertig)",
+        "installed": "Installation abgeschlossen",
         "installFailed": "Installation fehlgeschlagen: {{line}}"
     },
     "resigning": {
@@ -44,7 +44,7 @@
         "desc": "{{count}} gespeichertes Repo(s)",
         "active": "Aktiv",
         "pageTitle": "Gespeicherte Repos",
-        "pageDesc": "Repo auswählen zum Aktivieren. ◀▶ für Version / Installieren / Löschen.",
+        "pageDesc": "Repo auswählen zum Aktivieren. ◀▶ für Sperren / Version / Installieren / Löschen.",
         "empty": "Noch keine gespeicherten Repos. Von GitHub installieren, um eines hinzuzufügen.",
         "hint": "◀▶ Aktion wechseln  |  OK = bestätigen  |  ▲▼ Repo wechseln",
         "pickerTitle": "Version zur Installation auswählen",
@@ -59,5 +59,22 @@
     },
     "__contributors": [
         "krx3d"
-    ]
+    ],
+    "repoLists": {
+        "title": "Repo-Listen",
+        "reposTitle": "Gespeicherte Repos",
+        "add": "Repo-Liste hinzufügen",
+        "addTitle": "Repo-Liste hinzufügen",
+        "addHint": "Datei auf GitHub mit einem owner/repo pro Zeile. Beispiel: owner/repo/repos.md (optional @branch). Zum Hinzufügen OK drücken.",
+        "invalid": "Kein gültiger Listenpfad. Nutze owner/repo/pfad/datei.md (.md, .txt oder .list).",
+        "disabled": "deaktiviert",
+        "error": "konnte nicht geladen werden, bleibt unverändert",
+        "pending": "noch nicht synchronisiert",
+        "count": "{{count}} Repo(s)",
+        "nested": "aus anderer Liste",
+        "from": "aus Liste {{list}}",
+        "syncResult": "Repo-Listen synchronisiert: {{added}} hinzugefügt, {{removed}} entfernt",
+        "syncFailed": "Eine Repo-Liste konnte nicht geladen werden, nichts entfernt",
+        "syncUpToDate": "Repo-Listen sind aktuell"
+    }
 }

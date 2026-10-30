@@ -2,18 +2,110 @@ import { useContext, useEffect, useState } from 'preact/hooks';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import { useLocation } from 'preact-iso';
 import { useFocusable, setFocus } from '@noriginmedia/norigin-spatial-navigation';
-import { CheckCircleIcon, TrashIcon, ArrowDownIcon, TagIcon } from '@heroicons/react/16/solid';
+import { CheckCircleIcon, TrashIcon, ArrowDownIcon, TagIcon, LockClosedIcon, LockOpenIcon, EyeIcon, EyeSlashIcon, PlusIcon, QueueListIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
 import { Events } from '../components/WebSocketClient.js';
 import VersionPicker from '../components/VersionPicker.jsx';
+import { syncRepoLists } from '../utils/repoLists.js';
 import { fetchAllVersionInfo, isUpdateAvailable, clearReleaseInfoCacheForMissingRepos } from '../utils/versionInfo.js';
 
 const COL_NAME    = 0;
-const COL_VERSION = 1;
-const COL_INSTALL = 2;
-const COL_DELETE  = 3;
+const COL_LOCK    = 1;
+const COL_VERSION = 2;
+const COL_INSTALL = 3;
+const COL_DELETE  = 4;
 
-function RepoRow({ repo, isActive, focusKey, onSelect, onPickVersion, onInstall, onDelete, versionInfo, clientReady }) {
+const LIST_COL_NAME   = 0;
+const LIST_COL_TOGGLE = 1;
+const LIST_COL_DELETE = 2;
+
+function fileOf(listId) {
+    return listId.split('@')[0].split('/').pop();
+}
+
+// One repo list (a file on GitHub). Enter on the name = sync now.
+function ListRow({ list, depth, focusKey, onSync, onToggle, onDelete }) {
+    const { t } = useTranslation();
+    const [col, setCol] = useState(LIST_COL_NAME);
+
+    const { ref, focused } = useFocusable({
+        focusKey,
+        onEnterPress: () => {
+            if (col === LIST_COL_NAME)   onSync();
+            if (col === LIST_COL_TOGGLE) onToggle();
+            if (col === LIST_COL_DELETE) onDelete();
+        },
+        onArrowPress: (dir) => {
+            if (dir === 'right' && col < LIST_COL_DELETE) { setCol(c => c + 1); return false; }
+            if (dir === 'left'  && col > LIST_COL_NAME)   { setCol(c => c - 1); return false; }
+            return true;
+        }
+    });
+
+    useEffect(() => { if (!focused) setCol(LIST_COL_NAME); }, [focused]);
+    useEffect(() => {
+        if (focused) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, [focused]);
+
+    function ring(c) {
+        return focused && col === c ? (c === LIST_COL_DELETE ? 'ring-2 ring-red-400' : 'ring-2 ring-white') : '';
+    }
+
+    const status = !list.enabled ? { text: t('repoLists.disabled'), cls: 'text-slate-500' }
+        : list.status === 'error' ? { text: t('repoLists.error'), cls: 'text-red-400' }
+        : list.status === 'ok' ? { text: t('repoLists.count', { count: list.count }), cls: 'text-slate-400' }
+        : { text: t('repoLists.pending'), cls: 'text-slate-500' };
+
+    return (
+        <div
+            ref={ref}
+            style={{ marginLeft: depth * 20 }}
+            className={[
+                'flex items-center gap-2 rounded-xl px-3 border-2 transition-colors mb-2 min-h-[3.5rem] py-2',
+                focused ? 'border-sky-500 bg-slate-800' : 'border-slate-700 bg-slate-900'
+            ].join(' ')}
+        >
+            <div className={['flex flex-col flex-1 min-w-0 rounded-lg px-3 py-1 transition-all', ring(LIST_COL_NAME)].join(' ')}>
+                <div className="flex items-center gap-2">
+                    <QueueListIcon className={`h-5 w-5 flex-shrink-0 ${list.enabled ? 'text-violet-300' : 'text-slate-600'}`} />
+                    <span className={`font-mono text-sm truncate ${list.enabled ? 'text-slate-200' : 'text-slate-500'}`}>{list.id}</span>
+                </div>
+                <div className={`ml-7 text-xs ${status.cls}`}>
+                    {status.text}{list.parent ? ' \u00b7 ' + t('repoLists.nested') : ''}
+                </div>
+            </div>
+            <div className={['flex items-center justify-center w-10 h-10 rounded-lg bg-slate-600 text-white flex-shrink-0 transition-all', ring(LIST_COL_TOGGLE)].join(' ')}>
+                {list.enabled ? <EyeIcon className="h-5 w-5" /> : <EyeSlashIcon className="h-5 w-5" />}
+            </div>
+            <div className={['flex items-center justify-center w-10 h-10 rounded-lg bg-red-800 text-white flex-shrink-0 transition-all', ring(LIST_COL_DELETE)].join(' ')}>
+                <TrashIcon className="h-5 w-5" />
+            </div>
+        </div>
+    );
+}
+
+function AddListRow({ onAdd }) {
+    const { t } = useTranslation();
+    const { ref, focused } = useFocusable({ focusKey: 'list-add', onEnterPress: onAdd });
+    useEffect(() => {
+        if (focused) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, [focused]);
+    return (
+        <div
+            ref={ref}
+            onClick={onAdd}
+            className={[
+                'flex items-center justify-center gap-2 rounded-xl px-3 border-2 border-dashed mb-4 min-h-[3rem] py-2 transition-colors',
+                focused ? 'border-sky-500 bg-slate-800 text-slate-100' : 'border-slate-700 bg-slate-900 text-slate-400'
+            ].join(' ')}
+        >
+            <PlusIcon className="h-5 w-5" />
+            <span>{t('repoLists.add')}</span>
+        </div>
+    );
+}
+
+function RepoRow({ repo, isActive, focusKey, onSelect, onToggleLock, onPickVersion, onInstall, onDelete, versionInfo, clientReady, meta }) {
     const { t } = useTranslation();
     const [col, setCol] = useState(COL_NAME);
 
@@ -21,6 +113,7 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onPickVersion, onInstall,
         focusKey,
         onEnterPress: () => {
             if (col === COL_NAME)    onSelect();
+            if (col === COL_LOCK)    onToggleLock();
             if (col === COL_VERSION) onPickVersion();
             if (col === COL_INSTALL) onInstall();
             if (col === COL_DELETE)  onDelete();
@@ -37,11 +130,15 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onPickVersion, onInstall,
         if (focused) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, [focused]);
 
+    // No meta = added by hand = locked. Unlocked repos follow their list(s).
+    const locked = !meta || meta.locked;
+    const fromList = meta && meta.sources && meta.sources.length ? fileOf(meta.sources[0]) : null;
+
     const hasUpdate = versionInfo && isUpdateAvailable(versionInfo.installedVersion, versionInfo.latestVersion);
 
     function ring(c) {
         if (!focused || col !== c) return '';
-        return c === COL_DELETE ? 'ring-2 ring-red-400' : (c === COL_INSTALL || c === COL_VERSION) ? 'ring-2 ring-indigo-300' : 'ring-2 ring-white';
+        return c === COL_DELETE ? 'ring-2 ring-red-400' : (c === COL_INSTALL || c === COL_VERSION || c === COL_LOCK) ? 'ring-2 ring-indigo-300' : 'ring-2 ring-white';
     }
 
     return (
@@ -78,6 +175,9 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onPickVersion, onInstall,
                         </span>
                     )}
                 </div>
+                {fromList && (
+                    <div className="ml-7 text-xs text-slate-500">{t('repoLists.from', { list: fromList })}</div>
+                )}
                 {/* Version info line */}
                 {versionInfo && (
                     <div className="flex gap-3 mt-0.5 ml-7 text-xs">
@@ -104,6 +204,15 @@ function RepoRow({ repo, isActive, focusKey, onSelect, onPickVersion, onInstall,
                         )}
                     </div>
                 )}
+            </div>
+
+            {/* Lock: a locked repo is never removed when a repo list changes */}
+            <div className={[
+                'flex items-center justify-center w-10 h-10 rounded-lg text-white flex-shrink-0 transition-all',
+                locked ? 'bg-emerald-800' : 'bg-slate-600',
+                ring(COL_LOCK)
+            ].join(' ')}>
+                {locked ? <LockClosedIcon className="h-5 w-5" /> : <LockOpenIcon className="h-5 w-5" />}
             </div>
 
             {/* Pick a specific version */}
@@ -139,6 +248,8 @@ export default function SavedRepos() {
     const loc = useLocation();
     const { t } = useTranslation();
     const { repoList, tizenBrewRepo } = state.sharedData;
+    const repoLists = state.sharedData.repoLists || [];
+    const repoMeta = state.sharedData.repoMeta || {};
     const versionRefreshTick = state.sharedData.versionRefreshTick || 0;
 
     const clientReady = !!(state.client && state.client.socket && state.client.socket.readyState === WebSocket.OPEN);
@@ -150,9 +261,34 @@ export default function SavedRepos() {
 
     useEffect(() => {
         const activeIndex = repoList.indexOf(tizenBrewRepo);
-        const targetKey = `repo-row-${activeIndex >= 0 ? activeIndex : 0}`;
-        setFocus(targetKey);
+        setFocus(repoList.length ? `repo-row-${activeIndex >= 0 ? activeIndex : 0}` : 'list-add');
     }, []);
+
+    // Pull in repo lists whenever this page opens (also picks up a list that
+    // was just added), and tell the user what changed.
+    function syncLists(announce) {
+        return syncRepoLists(state.sharedData, dispatch).then(merged => {
+            const toast = window.__globalToast;
+            if (!merged || !toast) return;
+            const added = merged.repoList.filter(r => repoList.indexOf(r) < 0).length;
+            const removed = repoList.filter(r => merged.repoList.indexOf(r) < 0).length;
+            const failed = merged.repoLists.filter(l => l.status === 'error').length;
+            if (failed) toast.error(t('repoLists.syncFailed'), 5000);
+            else if (added || removed) toast.success(t('repoLists.syncResult', { added, removed }), 4000);
+            else if (announce) toast.info(t('repoLists.syncUpToDate'), 3000);
+        }).catch(() => {});
+    }
+
+    useEffect(() => { syncLists(false); }, []);
+
+    // Lists in display order: each top-level list followed by its nested ones.
+    const orderedLists = [];
+    (function walk(parent, depth) {
+        repoLists.filter(l => (l.parent || null) === parent).forEach(l => {
+            orderedLists.push({ list: l, depth });
+            if (depth < 4) walk(l.id, depth + 1);
+        });
+    })(null, 0);
 
     useEffect(() => {
         if (repoList.length === 0) return;
@@ -214,6 +350,24 @@ export default function SavedRepos() {
             </p>
 
             <div className="w-full max-w-2xl flex flex-col">
+                <h2 className="text-lg font-semibold text-slate-300 mb-2">{t('repoLists.title')}</h2>
+                {orderedLists.map(({ list, depth }, i) => (
+                    <ListRow
+                        key={list.id}
+                        list={list}
+                        depth={depth}
+                        focusKey={`list-row-${i}`}
+                        onSync={() => syncLists(true)}
+                        onToggle={() => dispatch({ type: 'TOGGLE_REPO_LIST', payload: list.id })}
+                        onDelete={() => {
+                            dispatch({ type: 'REMOVE_REPO_LIST', payload: list.id });
+                            [40, 120, 260].forEach(delay => setTimeout(() => setFocus('list-add'), delay));
+                        }}
+                    />
+                ))}
+                <AddListRow onAdd={() => loc.route('/ui/dist/index.html/add-repo-list')} />
+
+                <h2 className="text-lg font-semibold text-slate-300 mb-2">{t('repoLists.reposTitle')}</h2>
                 {repoList.length === 0 ? (
                     <p className="text-slate-500 text-center py-10 text-lg">{t('savedRepos.empty')}</p>
                 ) : (
@@ -225,6 +379,8 @@ export default function SavedRepos() {
                             focusKey={`repo-row-${i}`}
                             versionInfo={versionMap[repo]}
                             clientReady={clientReady}
+                            meta={repoMeta[repo]}
+                            onToggleLock={() => dispatch({ type: 'TOGGLE_REPO_LOCK', payload: repo })}
                             onSelect={() => selectRepo(repo)}
                             onPickVersion={() => state.client && setPickerIndex(i)}
                             onInstall={() => installRepo(repo)}

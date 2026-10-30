@@ -7,11 +7,11 @@
         "debuggingNotEnabled": "Error: Could not connect to the SDB Daemon. Are you sure you changed the Host PC IP to 127.0.0.1? If you have, hold the power button till you see the Samsung logo."
     },
     "installStatus": {
-        "fetching": "Fetching package",
-        "resigning": "Resigning package",
-        "parsing": "Parsing package",
-        "installing": "Installing package",
-        "installed": "Package installed",
+        "fetching": "Downloading package...",
+        "resigning": "Signing package...",
+        "parsing": "Checking package...",
+        "installing": "Installing on TV... (not finished yet)",
+        "installed": "Installation finished",
         "installFailed": "Installation failed: {{line}}"
     },
     "resigning": {
@@ -44,7 +44,7 @@
         "desc": "{{count}} saved repo(s)",
         "active": "Active",
         "pageTitle": "Saved Repos",
-        "pageDesc": "Select a repo to set it active. Use ◀▶ to reach Version / Install / Delete.",
+        "pageDesc": "Select a repo to set it active. Use ◀▶ for Lock / Version / Install / Delete.",
         "empty": "No saved repos yet. Install from GitHub to add one.",
         "hint": "◀▶ switch action  |  OK = confirm  |  ▲▼ switch repo",
         "pickerTitle": "Select version to install",
@@ -59,5 +59,22 @@
     },
     "__contributors": [
         "reisxd"
-    ]
+    ],
+    "repoLists": {
+        "title": "Repo lists",
+        "reposTitle": "Saved repos",
+        "add": "Add repo list",
+        "addTitle": "Add repo list",
+        "addHint": "File on GitHub with one owner/repo per line. Example: owner/repo/repos.md (optional @branch). Press OK to add.",
+        "invalid": "Not a valid list path. Use owner/repo/path/file.md (.md, .txt or .list).",
+        "disabled": "disabled",
+        "error": "could not load, kept as is",
+        "pending": "not synced yet",
+        "count": "{{count}} repo(s)",
+        "nested": "from another list",
+        "from": "from list {{list}}",
+        "syncResult": "Repo lists synced: {{added}} added, {{removed}} removed",
+        "syncFailed": "Could not load a repo list, nothing removed",
+        "syncUpToDate": "Repo lists are up to date"
+    }
 }

@@ -1,5 +1,6 @@
 import { createContext } from 'preact';
 import { useReducer } from 'preact/hooks';
+import { applySyncResults, removeRepoList, addRepoList } from '../utils/repoLists.js';
 
 const DEFAULT_REPOS = ['reisxd/TizenBrew', 'reisxd/TizenBrewInstaller'];
 
@@ -16,10 +17,36 @@ function saveRepoList(list) {
     try { localStorage.setItem('tizenBrewRepoList', JSON.stringify(list)); } catch (_) {}
 }
 
+function loadJson(key, fallback) {
+    try {
+        const stored = localStorage.getItem(key);
+        if (stored) return JSON.parse(stored);
+    } catch (_) {}
+    return fallback;
+}
+
+function saveJson(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+}
+
+// After a sync/remove the active repo may be gone: fall back like REMOVE_REPO.
+function persistRepoState(state, next) {
+    saveRepoList(next.repoList);
+    saveJson('tizenBrewRepoLists', next.repoLists);
+    saveJson('tizenBrewRepoMeta', next.repoMeta);
+    const active = next.repoList.indexOf(state.sharedData.tizenBrewRepo) >= 0
+        ? state.sharedData.tizenBrewRepo
+        : (next.repoList[0] ?? 'reisxd/TizenBrew');
+    try { localStorage.setItem('tizenBrewRepo', active); } catch (_) {}
+    return { ...state, sharedData: { ...state.sharedData, ...next, tizenBrewRepo: active } };
+}
+
 const initialState = {
     sharedData: {
         tizenBrewRepo: localStorage.getItem('tizenBrewRepo') || 'reisxd/TizenBrew',
         repoList: loadRepoList(),
+        repoLists: loadJson('tizenBrewRepoLists', []),
+        repoMeta: loadJson('tizenBrewRepoMeta', {}),
         state: null,
         directory: [],
         error: { message: null, dissapear: false },
@@ -62,7 +89,14 @@ function reducer(state, action) {
             const repo = action.payload.trim();
             if (!repo) return state;
             const existing = state.sharedData.repoList;
-            if (existing.includes(repo)) return state;
+            if (existing.includes(repo)) {
+                // Adding a list-managed repo by hand pins it.
+                const m = state.sharedData.repoMeta[repo];
+                if (!m || m.locked) return state;
+                const repoMeta = { ...state.sharedData.repoMeta, [repo]: { ...m, locked: true } };
+                saveJson('tizenBrewRepoMeta', repoMeta);
+                return { ...state, sharedData: { ...state.sharedData, repoMeta } };
+            }
             const next = [...existing, repo];
             saveRepoList(next);
             return { ...state, sharedData: { ...state.sharedData, repoList: next } };
@@ -70,11 +104,44 @@ function reducer(state, action) {
         case 'REMOVE_REPO': {
             const next = state.sharedData.repoList.filter(r => r !== action.payload);
             saveRepoList(next);
+            if (state.sharedData.repoMeta[action.payload]) {
+                const { [action.payload]: _gone, ...repoMeta } = state.sharedData.repoMeta;
+                saveJson('tizenBrewRepoMeta', repoMeta);
+                state = { ...state, sharedData: { ...state.sharedData, repoMeta } };
+            }
             const tizenBrewRepo = state.sharedData.tizenBrewRepo === action.payload
                 ? (next[0] ?? 'reisxd/TizenBrew')
                 : state.sharedData.tizenBrewRepo;
             localStorage.setItem('tizenBrewRepo', tizenBrewRepo);
             return { ...state, sharedData: { ...state.sharedData, repoList: next, tizenBrewRepo } };
+        }
+        case 'TOGGLE_REPO_LOCK': {
+            const repo = action.payload;
+            const m = state.sharedData.repoMeta[repo];
+            // No meta = added by hand = locked, so the first toggle unlocks it.
+            const locked = m ? !m.locked : false;
+            const repoMeta = { ...state.sharedData.repoMeta, [repo]: { sources: m ? m.sources : [], locked } };
+            saveJson('tizenBrewRepoMeta', repoMeta);
+            return { ...state, sharedData: { ...state.sharedData, repoMeta } };
+        }
+        case 'ADD_REPO_LIST': {
+            const repoLists = addRepoList(state.sharedData.repoLists, action.payload);
+            if (!repoLists) return state;
+            saveJson('tizenBrewRepoLists', repoLists);
+            return { ...state, sharedData: { ...state.sharedData, repoLists } };
+        }
+        case 'TOGGLE_REPO_LIST': {
+            const repoLists = state.sharedData.repoLists.map(l => l.id === action.payload ? { ...l, enabled: !l.enabled } : l);
+            saveJson('tizenBrewRepoLists', repoLists);
+            return { ...state, sharedData: { ...state.sharedData, repoLists } };
+        }
+        case 'REMOVE_REPO_LIST': {
+            const { repoList, repoLists, repoMeta } = state.sharedData;
+            return persistRepoState(state, removeRepoList(repoList, repoLists, repoMeta, action.payload));
+        }
+        case 'APPLY_REPO_SYNC': {
+            const { repoList, repoLists, repoMeta } = state.sharedData;
+            return persistRepoState(state, applySyncResults(repoList, repoLists, repoMeta, action.payload.results, action.payload.now));
         }
         default:
             return state;
