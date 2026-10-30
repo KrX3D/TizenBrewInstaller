@@ -8,6 +8,7 @@ import Client from './components/WebSocketClient.js';
 import InstallFromGitHub from './pages/InstallFromGitHub.jsx';
 import InstallFromUSB from './pages/InstallFromUSB.jsx';
 import SavedRepos from './pages/SavedRepos.jsx';
+import AddRepoList from './pages/AddRepoList.jsx';
 import About from './pages/About.jsx';
 import './components/i18n.js';
 import { ExclamationCircleIcon } from '@heroicons/react/16/solid';
@@ -15,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import Desktop from './pages/Desktop.jsx';
 import { ToastContainer, useToast, setGlobalToast } from './components/Toast.jsx';
 import { fetchAllVersionInfo, invalidateReleaseInfoCache } from './utils/versionInfo.js';
+import { syncRepoLists } from './utils/repoLists.js';
 
 export default function App() {
   const headerRef = useRef(null);
@@ -47,18 +49,15 @@ export default function App() {
     if (!context.state.client || startupToastShownRef.current) return;
     startupToastShownRef.current = true;
 
-    const repoList = context.state.sharedData.repoList;
-    if (!repoList || repoList.length === 0) return;
-
     // Delay slightly so the toast system is fully mounted
-    setTimeout(() => checkForUpdates(repoList), 1200);
+    setTimeout(() => runUpdateCheck(sharedRef.current, context.dispatch), 1200);
   }, [context.state.client]);
 
   // The Tizen app is usually resumed from the background rather than restarted,
   // so the page (and its once-per-start version check) stays alive. Re-check
   // whenever it becomes visible again, bypassing the 5-minute cache.
-  const repoListRef = useRef(context.state.sharedData.repoList);
-  repoListRef.current = context.state.sharedData.repoList;
+  const sharedRef = useRef(context.state.sharedData);
+  sharedRef.current = context.state.sharedData;
   useEffect(() => {
     let lastResumeAt = Date.now();
     function onResume() {
@@ -68,7 +67,7 @@ export default function App() {
       lastResumeAt = now;
       invalidateReleaseInfoCache();
       context.dispatch({ type: 'REFRESH_VERSIONS' });
-      checkForUpdates(repoListRef.current);
+      runUpdateCheck(sharedRef.current, context.dispatch);
     }
     document.addEventListener('visibilitychange', onResume);
     window.addEventListener('focus', onResume);
@@ -97,6 +96,7 @@ export default function App() {
             <Route component={InstallFromGitHub} path="/ui/dist/index.html/install-from-gh" />
             <Route component={InstallFromUSB}    path="/ui/dist/index.html/install-from-usb" />
             <Route component={SavedRepos}        path="/ui/dist/index.html/saved-repos" />
+            <Route component={AddRepoList}       path="/ui/dist/index.html/add-repo-list" />
             <Route component={About}             path="/ui/dist/index.html/about" />
           </Router>
         </div>
@@ -106,12 +106,39 @@ export default function App() {
   );
 }
 
+// Startup and resume can both fire close together (the TV often sends a
+// visibility event shortly after launch), which showed every update twice.
+// One check at a time, and never the same update toast twice in a row.
+let checkInFlight = false;
+let lastCheckAt = 0;
+const recentToasts = {};
+const TOAST_DEDUPE_MS = 120000;
+const MIN_CHECK_GAP_MS = 20000;
+
+function runUpdateCheck(sharedData, dispatch) {
+  if (checkInFlight || Date.now() - lastCheckAt < MIN_CHECK_GAP_MS) return;
+  checkInFlight = true;
+  // Pull in repo lists first so newly listed repos are checked too.
+  syncRepoLists(sharedData, dispatch)
+    .catch(() => null)
+    .then(merged => checkForUpdates(merged ? merged.repoList : sharedData.repoList))
+    .catch(() => {})
+    .then(() => { checkInFlight = false; lastCheckAt = Date.now(); });
+}
+
 function checkForUpdates(repoList) {
   const t = window.__globalToast;
-  if (!t || !repoList || repoList.length === 0) return;
+  if (!t || !repoList || repoList.length === 0) return Promise.resolve();
 
-  fetchAllVersionInfo(repoList).then(results => {
-    const updatable = results.filter(r => r.updateAvailable);
+  return fetchAllVersionInfo(repoList).then(results => {
+    const now = Date.now();
+    const updatable = results.filter(r => {
+      if (!r.updateAvailable) return false;
+      const key = r.repo + '|' + r.installedVersion + '|' + r.latestVersion;
+      if (recentToasts[key] && now - recentToasts[key] < TOAST_DEDUPE_MS) return false;
+      recentToasts[key] = now;
+      return true;
+    });
     updatable.forEach((r, idx) => {
       setTimeout(() => {
         const label = r.repo.split('/').pop();
