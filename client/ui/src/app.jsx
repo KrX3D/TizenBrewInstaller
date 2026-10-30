@@ -9,6 +9,7 @@ import InstallFromGitHub from './pages/InstallFromGitHub.jsx';
 import InstallFromUSB from './pages/InstallFromUSB.jsx';
 import SavedRepos from './pages/SavedRepos.jsx';
 import AddRepoList from './pages/AddRepoList.jsx';
+import InstallQueueOverlay from './components/InstallQueueOverlay.jsx';
 import About from './pages/About.jsx';
 import './components/i18n.js';
 import { ExclamationCircleIcon } from '@heroicons/react/16/solid';
@@ -100,6 +101,7 @@ export default function App() {
             <Route component={About}             path="/ui/dist/index.html/about" />
           </Router>
         </div>
+        <InstallQueueOverlay />
         <ToastContainer toasts={toasts} onDismiss={toast.dismiss} />
       </LocationProvider>
     </ErrorBoundary>

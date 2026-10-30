@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { useFocusable, setFocus, FocusContext } from '@noriginmedia/norigin-spatial-navigation';
 import { useTranslation } from 'react-i18next';
-import { fetchReleaseList } from '../utils/versionInfo.js';
+import { fetchReleaseList, fetchCommitSummary } from '../utils/versionInfo.js';
 
 // onArrow(dir) may return a focus key to jump to explicitly. Spatial navigation
 // alone doesn't reliably leave the scrolling list for the buttons below it.
-function Option({ focusKey, onPress, onArrow, children, className }) {
+function Option({ focusKey, onPress, onArrow, onFocused, children, className }) {
     const { ref, focused } = useFocusable({
         focusKey,
         onEnterPress: onPress,
+        onFocus: () => onFocused && onFocused(),
         onArrowPress: (dir) => {
             const target = onArrow && onArrow(dir);
             if (target) { setFocus(target); return false; }
@@ -46,6 +47,9 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [focusedIdx, setFocusedIdx] = useState(null);
+    // tag -> { loading } | { titles, more } | { error }, for releases without notes
+    const [changes, setChanges] = useState({});
 
     const { ref, focusKey } = useFocusable({
         focusKey: 'version-picker',
@@ -94,6 +98,22 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
         setFocus(`version-opt-${installedIdx >= 0 ? installedIdx : 0}`);
     }, [releases]);
 
+    // "What's new" for the focused release: its notes, else the commits since
+    // the next older release (debounced, so scrolling doesn't spend API calls).
+    const focusedRelease = releases && focusedIdx !== null ? releases[focusedIdx] : null;
+    const olderRelease = releases && focusedIdx !== null ? releases[focusedIdx + 1] : null;
+    useEffect(() => {
+        if (!focusedRelease || focusedRelease.notes || !olderRelease || changes[focusedRelease.tag]) return;
+        const tag = focusedRelease.tag;
+        const timer = setTimeout(() => {
+            setChanges(c => ({ ...c, [tag]: { loading: true } }));
+            fetchCommitSummary(repo, olderRelease.sha || olderRelease.tag, focusedRelease.sha || tag)
+                .then(r => setChanges(c => ({ ...c, [tag]: r })))
+                .catch(() => setChanges(c => ({ ...c, [tag]: { error: true } })));
+        }, 350);
+        return () => clearTimeout(timer);
+    }, [focusedIdx, releases]);
+
     const lastKey = releases && releases.length ? `version-opt-${releases.length - 1}` : null;
     const footerKey = hasMore ? 'version-more' : 'version-close';
 
@@ -106,7 +126,7 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
                     <h2 className="text-xl font-bold text-violet-300">{t('savedRepos.pickerTitle')}</h2>
                     <p className="font-mono text-sm text-slate-400 mb-3 truncate">{repo}</p>
 
-                    <div className="overflow-y-auto pr-1" style={{ maxHeight: '50vh' }}>
+                    <div className="overflow-y-auto pr-1" style={{ maxHeight: '36vh' }}>
                         {releases === null && <p className="text-slate-400 py-4 text-center">{t('savedRepos.pickerLoading')}</p>}
                         {failed && <p className="text-amber-400 py-4 text-center">{t('savedRepos.pickerError')}</p>}
                         {releases && !failed && releases.length === 0 && (
@@ -117,6 +137,7 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
                                 key={r.tag}
                                 focusKey={`version-opt-${i}`}
                                 onPress={() => onPick(r.tag)}
+                                onFocused={() => setFocusedIdx(i)}
                                 onArrow={(dir) => (dir === 'down' && i === releases.length - 1) ? footerKey
                                     : (dir === 'up' && i === 0) ? 'version-close' : null}
                             >
@@ -128,6 +149,31 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
                             </Option>
                         ))}
                     </div>
+
+                    {focusedRelease && (
+                        <div className="mt-2 mb-1 border-t border-slate-700 pt-2 text-sm text-slate-300 overflow-hidden" style={{ maxHeight: '18vh' }}>
+                            <div className="text-xs font-bold text-slate-400 mb-1">{t('savedRepos.changesTitle', { tag: focusedRelease.tag })}</div>
+                            {focusedRelease.notes ? (
+                                <div className="whitespace-pre-wrap break-words">{focusedRelease.notes}</div>
+                            ) : changes[focusedRelease.tag] && changes[focusedRelease.tag].titles ? (
+                                <div>
+                                    {changes[focusedRelease.tag].titles.length === 0 && <span className="text-slate-500">{t('savedRepos.changesNone')}</span>}
+                                    {changes[focusedRelease.tag].titles.map((title, n) => (
+                                        <div key={n} className="truncate">&bull; {title}</div>
+                                    ))}
+                                    {changes[focusedRelease.tag].more > 0 && (
+                                        <div className="text-slate-500">{t('savedRepos.changesMore', { count: changes[focusedRelease.tag].more })}</div>
+                                    )}
+                                </div>
+                            ) : changes[focusedRelease.tag] && changes[focusedRelease.tag].error ? (
+                                <span className="text-slate-500">{t('savedRepos.changesError')}</span>
+                            ) : olderRelease ? (
+                                <span className="text-slate-500">{t('savedRepos.changesLoading')}</span>
+                            ) : (
+                                <span className="text-slate-500">{t('savedRepos.changesNone')}</span>
+                            )}
+                        </div>
+                    )}
 
                     {hasMore && (
                         <Option

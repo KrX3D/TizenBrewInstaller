@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Events } from '../components/WebSocketClient.js';
 import VersionPicker from '../components/VersionPicker.jsx';
 import { syncRepoLists } from '../utils/repoLists.js';
+import { startQueue } from '../utils/installQueue.js';
 import { fetchAllVersionInfo, isUpdateAvailable, clearReleaseInfoCacheForMissingRepos } from '../utils/versionInfo.js';
 
 const COL_NAME    = 0;
@@ -80,6 +81,27 @@ function ListRow({ list, depth, focusKey, onSync, onToggle, onDelete }) {
             <div className={['flex items-center justify-center w-10 h-10 rounded-lg bg-red-800 text-white flex-shrink-0 transition-all', ring(LIST_COL_DELETE)].join(' ')}>
                 <TrashIcon className="h-5 w-5" />
             </div>
+        </div>
+    );
+}
+
+function UpdateAllRow({ count, onRun }) {
+    const { t } = useTranslation();
+    const { ref, focused } = useFocusable({ focusKey: 'update-all', onEnterPress: onRun });
+    useEffect(() => {
+        if (focused) ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, [focused]);
+    return (
+        <div
+            ref={ref}
+            onClick={onRun}
+            className={[
+                'flex items-center justify-center gap-2 rounded-xl px-3 border-2 mb-4 min-h-[3.5rem] py-2 font-semibold transition-colors',
+                focused ? 'border-amber-300 bg-amber-700 text-white' : 'border-amber-500 bg-amber-950/40 text-amber-300'
+            ].join(' ')}
+        >
+            <ArrowDownIcon className="h-5 w-5" />
+            <span>{t('queue.updateAll', { count })}</span>
         </div>
     );
 }
@@ -305,6 +327,15 @@ export default function SavedRepos() {
         });
     }, [repoList.join(','), versionRefreshTick]);
 
+    const updatable = repoList
+        .map(r => versionMap[r])
+        .filter(v => v && isUpdateAvailable(v.installedVersion, v.latestVersion));
+
+    function runUpdateAll() {
+        if (!state.client) return;
+        startQueue(state.client, updatable, () => dispatch({ type: 'REFRESH_VERSIONS' }));
+    }
+
     function selectRepo(repo) {
         dispatch({ type: 'SET_TIZENBREW_REPO', payload: repo });
         loc.route('/ui/dist/index.html');
@@ -350,6 +381,9 @@ export default function SavedRepos() {
             </p>
 
             <div className="w-full max-w-2xl flex flex-col">
+                {updatable.length > 0 && clientReady && (
+                    <UpdateAllRow count={updatable.length} onRun={runUpdateAll} />
+                )}
                 <h2 className="text-lg font-semibold text-slate-300 mb-2">{t('repoLists.title')}</h2>
                 {orderedLists.map(({ list, depth }, i) => (
                     <ListRow
