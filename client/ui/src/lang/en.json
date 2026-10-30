@@ -55,7 +55,12 @@
         "pickerInstalled": "INSTALLED",
         "pickerPrerelease": "PRE-RELEASE",
         "pickerClose": "Close",
-        "pickerLoadMore": "Load older versions..."
+        "pickerLoadMore": "Load older versions...",
+        "changesTitle": "Changes in {{tag}}",
+        "changesLoading": "Loading changes...",
+        "changesNone": "No release notes or commits found.",
+        "changesError": "Could not load changes.",
+        "changesMore": "...and {{count}} more commits"
     },
     "__contributors": [
         "reisxd"
@@ -76,5 +81,14 @@
         "syncResult": "Repo lists synced: {{added}} added, {{removed}} removed",
         "syncFailed": "Could not load a repo list, nothing removed",
         "syncUpToDate": "Repo lists are up to date"
+    },
+    "queue": {
+        "updateAll": "Update all ({{count}})",
+        "title": "Updating {{current}} of {{total}}",
+        "finished": "Finished: {{done}} of {{total}} updated",
+        "failedCount": "{{count}} failed",
+        "cancel": "Cancel remaining",
+        "close": "Close",
+        "needsCertificate": "Samsung certificate required, queue stopped"
     }
 }

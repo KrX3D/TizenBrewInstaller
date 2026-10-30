@@ -55,7 +55,12 @@
         "pickerInstalled": "INSTALLIERT",
         "pickerPrerelease": "VORABVERSION",
         "pickerClose": "Schließen",
-        "pickerLoadMore": "Ältere Versionen laden..."
+        "pickerLoadMore": "Ältere Versionen laden...",
+        "changesTitle": "Änderungen in {{tag}}",
+        "changesLoading": "Änderungen werden geladen...",
+        "changesNone": "Keine Release-Notes oder Commits gefunden.",
+        "changesError": "Änderungen konnten nicht geladen werden.",
+        "changesMore": "...und {{count}} weitere Commits"
     },
     "__contributors": [
         "krx3d"
@@ -76,5 +81,14 @@
         "syncResult": "Repo-Listen synchronisiert: {{added}} hinzugefügt, {{removed}} entfernt",
         "syncFailed": "Eine Repo-Liste konnte nicht geladen werden, nichts entfernt",
         "syncUpToDate": "Repo-Listen sind aktuell"
+    },
+    "queue": {
+        "updateAll": "Alle aktualisieren ({{count}})",
+        "title": "Aktualisiere {{current}} von {{total}}",
+        "finished": "Fertig: {{done}} von {{total}} aktualisiert",
+        "failedCount": "{{count}} fehlgeschlagen",
+        "cancel": "Rest abbrechen",
+        "close": "Schließen",
+        "needsCertificate": "Samsung-Zertifikat erforderlich, Warteschlange gestoppt"
     }
 }

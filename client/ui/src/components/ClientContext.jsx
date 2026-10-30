@@ -25,6 +25,18 @@ function loadJson(key, fallback) {
     return fallback;
 }
 
+// Default repo list shipped with this installer (repos.md in this repo).
+// Only seeded while the user has never had any lists; deleting it sticks.
+const DEFAULT_REPO_LIST = 'KrX3D/TizenBrewInstaller/repos.md';
+
+function loadRepoLists() {
+    const stored = loadJson('tizenBrewRepoLists', null);
+    if (stored) return stored;
+    const lists = addRepoList([], DEFAULT_REPO_LIST) || [];
+    saveJson('tizenBrewRepoLists', lists);
+    return lists;
+}
+
 function saveJson(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
 }
@@ -45,7 +57,7 @@ const initialState = {
     sharedData: {
         tizenBrewRepo: localStorage.getItem('tizenBrewRepo') || 'reisxd/TizenBrew',
         repoList: loadRepoList(),
-        repoLists: loadJson('tizenBrewRepoLists', []),
+        repoLists: loadRepoLists(),
         repoMeta: loadJson('tizenBrewRepoMeta', {}),
         state: null,
         directory: [],

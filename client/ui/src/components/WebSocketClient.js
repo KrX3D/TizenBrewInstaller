@@ -1,5 +1,6 @@
 import i18next from 'i18next';
 import { recordInstalledAppId } from '../utils/versionInfo.js';
+import { onInstallProgress, onInstallResult, onInstallError, onInstallFatal } from '../utils/installQueue.js';
 
 const Events = {
     InstallPackage:           1,
@@ -31,6 +32,7 @@ class Client {
             case Events.InstallPackage: {
                 const requiresResigning = payload.response === 2;
                 if (requiresResigning) {
+                    onInstallFatal(i18next.t('queue.needsCertificate'));
                     this.context.dispatch({ type: 'SET_QR_CODE', payload: true });
                 } else if (payload.response === 0) {
                     if (payload.packageInfo?.appId && this.lastInstallUrl && this.lastInstallUrl !== 'reisxd/TizenBrewInstaller') {
@@ -39,6 +41,7 @@ class Client {
                     }
 
                     const installFailedLine = payload.result.split('\n').find(line => line.includes('install failed'));
+                    onInstallResult(!installFailedLine, installFailedLine);
                     if (installFailedLine) {
                         this.context.dispatch({
                             type: 'SET_ERROR',
@@ -58,6 +61,7 @@ class Client {
                 break;
             }
             case Events.Error: {
+                onInstallError(i18next.t(payload));
                 this.context.dispatch({
                     type: 'SET_ERROR',
                     payload: { message: i18next.t(payload), disappear: false }
@@ -66,6 +70,7 @@ class Client {
             }
             case Events.InstallationStatus: {
                 this.context.dispatch({ type: 'SET_STATE', payload });
+                onInstallProgress();
                 if (payload === 'installStatus.installed') {
                     this.context.dispatch({ type: 'REFRESH_VERSIONS' });
                 }

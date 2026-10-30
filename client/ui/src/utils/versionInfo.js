@@ -203,6 +203,60 @@ export function invalidateReleaseInfoCache() {
     } catch (_) {}
 }
 
+// Release bodies built by CI only say "build from commit <sha>" plus our
+// TBI_METADATA line. Lines like that are not notes; what is left is.
+function cleanReleaseNotes(body) {
+    if (!body || typeof body !== 'string') return '';
+    return body.split(/\r?\n/)
+        .filter(function(line) {
+            return line.indexOf('TBI_METADATA') < 0 && !/\b[0-9a-f]{40}\b/.test(line);
+        })
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+        .slice(0, 800);
+}
+
+function extractCommitSha(body) {
+    var m = body && typeof body === 'string' ? body.match(/\b([0-9a-f]{40})\b/) : null;
+    return m ? m[1] : null;
+}
+
+var commitSummaryCache = {};
+
+// Commit titles between two releases (newest first, max 10), used as a
+// changelog when a release has no notes. base/head are commit SHAs or tags.
+export function fetchCommitSummary(repo, base, head) {
+    var normalized = normalizeRepo(repo);
+    var key = normalized + '|' + base + '|' + head;
+    if (commitSummaryCache[key]) return Promise.resolve(commitSummaryCache[key]);
+
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeoutId = setTimeout(function() {
+        if (controller) controller.abort();
+    }, 10000);
+
+    return fetch('https://api.github.com/repos/' + normalized + '/compare/' + encodeURIComponent(base) + '...' + encodeURIComponent(head), controller ? { signal: controller.signal } : undefined)
+        .then(function(res) {
+            clearTimeout(timeoutId);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
+        .then(function(data) {
+            var titles = (data.commits || [])
+                .map(function(c) { return String((c.commit && c.commit.message) || '').split('\n')[0].trim(); })
+                .filter(function(t) { return t && !/^Merge /.test(t) && !/^chore: bump version/.test(t); })
+                .reverse();
+            var out = { titles: titles.slice(0, 10), more: Math.max(0, titles.length - 10) };
+            commitSummaryCache[key] = out;
+            return out;
+        })
+        .catch(function(err) {
+            clearTimeout(timeoutId);
+            throw err;
+        });
+}
+
 // Lists installable releases (those with a .wgt/.tpk asset), newest first, one
 // GitHub page at a time. hasMore is based on the raw page size, since filtered
 // releases (drafts, no asset) would otherwise make a full page look like the end.
@@ -238,7 +292,9 @@ export function fetchReleaseList(repo, page) {
                             tag: r.tag_name,
                             version: r.tag_name.replace(/^v/, ''),
                             prerelease: !!r.prerelease,
-                            publishedAt: r.published_at ? r.published_at.slice(0, 10) : null
+                            publishedAt: r.published_at ? r.published_at.slice(0, 10) : null,
+                            notes: cleanReleaseNotes(r.body),
+                            sha: extractCommitSha(r.body)
                         };
                     })
             };
