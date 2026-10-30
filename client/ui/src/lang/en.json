@@ -10,7 +10,7 @@
         "fetching": "Downloading package...",
         "resigning": "Signing package...",
         "parsing": "Checking package...",
-        "installing": "Installing on TV... (not finished yet)",
+        "installing": "Installing on TV...",
         "installed": "Installation finished",
         "installFailed": "Installation failed: {{line}}"
     },

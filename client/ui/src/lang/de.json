@@ -10,7 +10,7 @@
         "fetching": "Paket wird heruntergeladen...",
         "resigning": "Paket wird signiert...",
         "parsing": "Paket wird geprüft...",
-        "installing": "Installation läuft... (noch nicht fertig)",
+        "installing": "Installation läuft...",
         "installed": "Installation abgeschlossen",
         "installFailed": "Installation fehlgeschlagen: {{line}}"
     },

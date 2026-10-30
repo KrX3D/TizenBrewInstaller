@@ -69,7 +69,10 @@ function settle(ok, message) {
     item.status = ok ? 'done' : 'failed';
     item.error = ok ? null : (message || 'failed');
     emit();
-    gapTimer = setTimeout(runNext, GAP_MS);
+    // Last one done: finish right away instead of waiting out the gap.
+    var more = state.items.some(function(i) { return i.status === 'pending'; });
+    if (more) gapTimer = setTimeout(runNext, GAP_MS);
+    else finish();
 }
 
 // repos: [{ repo, installedVersion, latestVersion }]
