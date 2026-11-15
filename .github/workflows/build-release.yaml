@@ -28,6 +28,11 @@ on:
         default: false
         type: boolean
 
+# reisxd/tizen.js has no tags or releases; pin a commit so builds are
+# reproducible. Keep in sync with client/services/tizenbrew-installer-service/package.json.
+env:
+  TIZENJS_REF: 45b00106149d0c8eff74ead4a979c909dd80efd6
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,6 +45,25 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Fail before the version bump/tag if signing can't work.
+      - name: Check required secrets
+        env:
+          TIZEN_AUTHOR_KEY: ${{ secrets.TIZEN_AUTHOR_KEY }}
+          TIZEN_AUTHOR_KEY_PW: ${{ secrets.TIZEN_AUTHOR_KEY_PW }}
+          TIZEN_CERT_BUNDLE: ${{ secrets.TIZEN_CERT_BUNDLE }}
+        run: |
+          missing=0
+          for name in TIZEN_AUTHOR_KEY TIZEN_AUTHOR_KEY_PW TIZEN_CERT_BUNDLE; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing secret::$name is not set. See README > Secrets."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::TIZEN_CERT_BUNDLE replaces the certificate-generator download from download.tizen.org, which returns 404. Without it the .wgt cannot be signed."
+            exit 1
+          fi
 
       - name: Fetch tags (safety)
         run: |
@@ -138,7 +162,7 @@ jobs:
           sudo apt update
           sudo apt install -y expect zip coreutils
           npm install
-          npm install -g @vercel/ncc wgt-to-usb https://github.com/reisxd/tizen.js/tarball/main @yao-pkg/pkg
+          npm install -g @vercel/ncc wgt-to-usb "https://github.com/reisxd/tizen.js/tarball/${TIZENJS_REF}" @yao-pkg/pkg
           npm run build
           rm -rf node_modules
           rm -rf transpiled
@@ -161,11 +185,17 @@ jobs:
         env:
           TIZEN_CERT_BUNDLE: ${{ secrets.TIZEN_CERT_BUNDLE }}
         run: |
-          if [ -n "$TIZEN_CERT_BUNDLE" ]; then
-            mkdir -p "$HOME/share/.tizen-cert"
-            echo "$TIZEN_CERT_BUNDLE" | base64 -d | tar -xz -C "$HOME/share/.tizen-cert"
-          else
-            echo "TIZEN_CERT_BUNDLE not set; tizenjs will try to download it."
+          CERT_DIR="$HOME/share/.tizen-cert"
+          SIGNER="$CERT_DIR/distributor/sdk-public/tizen-distributor-signer.p12"
+          mkdir -p "$CERT_DIR"
+          if ! echo "$TIZEN_CERT_BUNDLE" | base64 -d | tar -xz -C "$CERT_DIR"; then
+            echo "::error title=Bad TIZEN_CERT_BUNDLE::Could not decode/extract the secret. It must be a base64 tar.gz, see README > Creating TIZEN_CERT_BUNDLE."
+            exit 1
+          fi
+          if [ ! -s "$SIGNER" ]; then
+            echo "::error title=Bad TIZEN_CERT_BUNDLE::distributor/sdk-public/tizen-distributor-signer.p12 is missing from the bundle. Contents:"
+            find "$CERT_DIR" -type f | sed "s#^$CERT_DIR/##"
+            exit 1
           fi
 
       - name: Build TizenBrew

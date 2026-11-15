@@ -54,6 +54,10 @@ The release workflow (`.github/workflows/build-release.yaml`) uses these reposit
 | `TIZEN_AUTHOR_KEY_PW` | Password of that author certificate. |
 | `TIZEN_CERT_BUNDLE` | Base64 `tar.gz` holding `distributor/sdk-public/tizen-distributor-signer.p12` from Tizen Studio. `tizenjs` normally downloads it from `download.tizen.org`, which now returns 404, so the workflow restores it into `~/share/.tizen-cert` instead. |
 
+All three Tizen secrets are required. The workflow checks them first and stops with an error naming the missing one, before it bumps the version or tags.
+
+`tizen.js` (reisxd) has no tags, so it is pinned to a commit: `TIZENJS_REF` in the workflow and the `tizen` dependency in `client/services/tizenbrew-installer-service/package.json` (and its lockfile). Change all of them together to update it.
+
 ### Creating `TIZEN_CERT_BUNDLE`
 
 Needs Tizen Studio installed (default path `C:\tizen-studio`). In PowerShell:
