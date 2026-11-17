@@ -1,4 +1,4 @@
-import { ArrowDownIcon, ArrowPathIcon, BookmarkIcon } from '@heroicons/react/16/solid';
+import { ArrowDownIcon, ArrowPathIcon, BookmarkIcon, KeyIcon } from '@heroicons/react/16/solid';
 import { useContext, useRef, useState, useEffect } from 'preact/hooks';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import Item from '../components/Item.jsx';
@@ -14,6 +14,7 @@ import {
     fetchLatestVersionInfo,
     isUpdateAvailable
 } from '../utils/versionInfo.js';
+import { useGitHubToken, maskToken } from '../utils/githubToken.js';
 
 const PKG_ID_TIZENBREW_USB_DEMO = 'xvvl3S1bTU';
 const PKG_ID_TIZENBREW_INSTALLER = 'xvvl3S1bTI';
@@ -37,6 +38,8 @@ export default function Home() {
     const [latestVersion, setLatestVersion] = useState(null);
     const [latestSource, setLatestSource] = useState('unavailable');
     const [loadingLatest, setLoadingLatest] = useState(false);
+    const [latestError, setLatestError] = useState(null);
+    const githubToken = useGitHubToken();
 
     // Only start the version fetch once the WebSocket client is confirmed alive,
     // and wait 2 s before the first attempt so the network stack has time to settle
@@ -46,6 +49,7 @@ export default function Home() {
 
         setLatestVersion(null);
         setLatestSource('unavailable');
+        setLatestError(null);
         setLoadingLatest(true);
 
         let cancelled = false;
@@ -56,13 +60,15 @@ export default function Home() {
                 .then(info => {
                     if (cancelled) return;
 
-                    if ((info.latestSource || 'unavailable') === 'unavailable' && attempt < 2) {
+                    // Retrying won't help against a rate limit or a bad token.
+                    if ((info.latestSource || 'unavailable') === 'unavailable' && !info.error && attempt < 2) {
                         timer = setTimeout(() => loadLatest(attempt + 1), 3000);
                         return;
                     }
 
                     setLatestVersion(info.latestVersion);
                     setLatestSource(info.latestSource || 'unavailable');
+                    setLatestError(info.error || null);
                     setLoadingLatest(false);
                 })
                 .catch(() => {
@@ -170,7 +176,10 @@ export default function Home() {
                         <p className="text-xs text-slate-500 mt-1">Checking latest version...</p>
                     )}
                     {!loadingLatest && !latestVersion && latestSource === 'unavailable' && (
-                        <p className="text-xs text-amber-400 mt-1">Could not check latest version online.</p>
+                        <p className="text-xs text-amber-400 mt-1">{latestError ? t(latestError.key, latestError.args) : t('installer.latestUnavailable')}</p>
+                    )}
+                    {latestVersion && latestError && (
+                        <p className="text-xs text-amber-400 mt-1">{t(latestError.key, latestError.args)}</p>
                     )}
                     {!isKnownRepo(activeRepo) && (
                         <p className="text-xs text-slate-500 mt-1">{t('installer.versionUnknown')}</p>
@@ -204,6 +213,19 @@ export default function Home() {
                     </h3>
                     <p className="mt-2 text-sm text-slate-400">{t('savedRepos.desc', { count: context.state.sharedData.repoList.length })}</p>
                     <p className="mt-1 text-xs text-slate-500 break-all">{t('savedRepos.active')}: {activeRepo}</p>
+                </Item>
+
+                <Item focusKey="home-card-token" upFocusKey="sn:focusable-item-1" onClick={() => loc.route('/ui/dist/index.html/github-token')}>
+                    <h3 className='text-slate-300 text-base/7 font-semibold'>
+                        <span className='flex items-center gap-2'>
+                            <KeyIcon className='h-8 w-8 text-slate-300' />
+                            {t('githubToken.button')}
+                        </span>
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-400">{t('githubToken.desc')}</p>
+                    <p className={`mt-1 text-xs break-all ${githubToken ? 'text-emerald-400' : 'text-slate-500'}`}>
+                        {githubToken ? t('githubToken.saved', { token: maskToken(githubToken) }) : t('githubToken.none')}
+                    </p>
                 </Item>
             </div>
         </div>

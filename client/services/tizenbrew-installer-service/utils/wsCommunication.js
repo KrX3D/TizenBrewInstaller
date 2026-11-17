@@ -20,6 +20,8 @@ const Events = {
     DeleteConfiguration:      5,
     ConnectToTV:              6,
     InstallFile:              7,
+    GitHubTokenAddress:       8,
+    GitHubToken:              9,
 };
 
 module.exports = { Connection, Events };

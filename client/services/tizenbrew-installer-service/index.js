@@ -27,8 +27,9 @@ module.exports.onStart = function () {
     const { join, dirname } = require('path');
     const { parsePackage, installPackage } = require('./utils/PackageInstallation.js');
     const { Connection, Events } = require('./utils/wsCommunication.js');
-    const { homedir } = require('os');
+    const { homedir, networkInterfaces } = require('os');
     const AccessInfoHTMLPage = require('./utils/HTMLPage.js');
+    const GitHubTokenHTMLPage = require('./utils/GitHubTokenHTMLPage.js');
     const PushFile = require('./utils/FilePusher.js');
 
     let WebSocket;
@@ -55,6 +56,38 @@ module.exports.onStart = function () {
             res.sendFile(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client/ui/dist/index.html`);
         } else res.sendFile((join(__dirname, '../../ui/dist/index.html')));
     });
+
+    // Lets a phone or PC on the same network hand over a GitHub token, so
+    // nobody has to type 40+ characters with the TV remote. The token goes
+    // straight to the UI (which keeps it); it is never sent back out here.
+    const GITHUB_TOKEN_PATH = '/github-token';
+    app.get(GITHUB_TOKEN_PATH, (_, res) => {
+        res.send(GitHubTokenHTMLPage);
+    });
+    app.post(GITHUB_TOKEN_PATH, express.urlencoded({ extended: false }), (req, res) => {
+        const token = String((req.body && req.body.token) || '').trim();
+        if (!/^[A-Za-z0-9_]{20,255}$/.test(token)) {
+            return res.status(400).json({ error: 'That does not look like a GitHub token.' });
+        }
+        if (!wsClient) {
+            return res.status(503).json({ error: 'TizenBrew Installer is not open on the TV. Open it and try again.' });
+        }
+        wsClient.send(wsClient.Event(Events.GitHubToken, { token }));
+        res.json({ ok: true });
+    });
+
+    function lanAddresses() {
+        const out = [];
+        try {
+            const ifaces = networkInterfaces();
+            Object.keys(ifaces).forEach(name => {
+                (ifaces[name] || []).forEach(addr => {
+                    if ((addr.family === 'IPv4' || addr.family === 4) && !addr.internal) out.push(addr.address);
+                });
+            });
+        } catch (_) {}
+        return out;
+    }
 
     let isTizen7OrHigher = isTV && Number(tizen.systeminfo.getCapability('http://tizen.org/feature/platform.version').split('.')[0]) >= 7;
     const isTizen3 = isTV && tizen.systeminfo.getCapability('http://tizen.org/feature/platform.version').startsWith('3.0');
@@ -266,7 +299,7 @@ module.exports.onStart = function () {
 
                     if (payload.url.split('/').length === 2) {
                         wsConn.send(wsConn.Event(Events.InstallationStatus, 'installStatus.fetching'));
-                        fetchRelease(payload.url, payload.tag)
+                        fetchRelease(payload.url, payload.tag, payload.githubToken)
                             .then(release => {
                                 const asset = release.assets.find(a => a.name.endsWith('.wgt') || a.name.endsWith('.tpk'));
                                 if (!asset) throw new Error(`No .wgt/.tpk asset found in ${payload.tag ? `release ${payload.tag}` : 'latest release'}.`);
@@ -282,12 +315,22 @@ module.exports.onStart = function () {
                                         wsConn.send(wsConn.Event(Events.Error, `Error fetching release asset: ${err.message}`));
                                     });
                             }).catch(err => {
+                                if (err.i18nKey) {
+                                    wsConn.send(wsConn.Event(Events.Error, { key: err.i18nKey, args: err.i18nArgs || {} }));
+                                    return;
+                                }
                                 wsConn.send(wsConn.Event(Events.Error, `Error fetching GitHub release: ${err.message}`));
                             });
                     } else {
                         const fileBuffer = readFileSync(payload.url);
                         resignOrInstall(fileBuffer);
                     }
+                    break;
+                }
+
+                case Events.GitHubTokenAddress: {
+                    const urls = lanAddresses().map(ip => `http://${ip}:8091${GITHUB_TOKEN_PATH}`);
+                    wsConn.send(wsConn.Event(Events.GitHubTokenAddress, { urls }));
                     break;
                 }
 

@@ -64,7 +64,8 @@ const initialState = {
         error: { message: null, dissapear: false },
         qrCodeShow: false,
         connectedToTV: false,
-        versionRefreshTick: 0
+        versionRefreshTick: 0,
+        githubTokenUrls: []
     },
     client: null
 };
@@ -84,6 +85,8 @@ function reducer(state, action) {
             return { ...state, sharedData: { ...state.sharedData, directory: action.payload } };
         case 'SET_QR_CODE':
             return { ...state, sharedData: { ...state.sharedData, qrCodeShow: action.payload } };
+        case 'SET_GITHUB_TOKEN_URLS':
+            return { ...state, sharedData: { ...state.sharedData, githubTokenUrls: action.payload } };
         case 'SET_CONNECTED_TO_TV':
             return { ...state, sharedData: { ...state.sharedData, connectedToTV: action.payload } };
         case 'REFRESH_VERSIONS':
