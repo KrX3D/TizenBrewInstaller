@@ -1,4 +1,4 @@
-import { ArrowDownIcon, TvIcon } from '@heroicons/react/16/solid';
+import { ArrowDownIcon, KeyIcon, TvIcon } from '@heroicons/react/16/solid';
 import { useContext, useState, useRef } from 'react';
 import { GlobalStateContext } from '../components/ClientContext.jsx';
 import Item from '../components/Item.jsx';
@@ -114,6 +114,15 @@ export default function Desktop() {
                                     {t('installer.selectToInstall')}
                                 </span>
                             </h3>
+                        </Item>
+                        <Item onClick={() => loc.route('/ui/dist/index.html/github-token')}>
+                            <h3 className='text-slate-300 text-base/7 font-semibold'>
+                                <span className='flex items-center gap-2'>
+                                    <KeyIcon className='h-8 w-8 text-slate-300' />
+                                    {t('githubToken.button')}
+                                </span>
+                            </h3>
+                            <p className="mt-2 text-sm text-slate-400">{t('githubToken.desc')}</p>
                         </Item>
                     </>
                 ) : (

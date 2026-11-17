@@ -4,7 +4,10 @@
         "started": "Dienst gestartet."
     },
     "errors": {
-        "debuggingNotEnabled": "Fehler: Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Hast du die Host-PC-IP auf 127.0.0.1 gesetzt? Wenn ja, halte die Ein/Aus-Taste gedrückt, bis das Samsung-Logo erscheint."
+        "debuggingNotEnabled": "Fehler: Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Hast du die Host-PC-IP auf 127.0.0.1 gesetzt? Wenn ja, halte die Ein/Aus-Taste gedrückt, bis das Samsung-Logo erscheint.",
+        "githubRateLimit": "GitHub-Limit erreicht: Ohne Token erlaubt GitHub nur 60 Anfragen pro Stunde. Versuche es nach {{time}} erneut oder hinterlege auf dem Startbildschirm einen GitHub-Token (GitHub-Token).",
+        "githubRateLimitWithToken": "GitHub-Limit trotz deines Tokens erreicht. Versuche es nach {{time}} erneut.",
+        "githubBadToken": "GitHub hat den gespeicherten Token abgelehnt (abgelaufen, widerrufen oder falsch). Ersetze oder entferne ihn auf dem Startbildschirm (GitHub-Token)."
     },
     "installStatus": {
         "fetching": "Paket wird heruntergeladen...",
@@ -33,7 +36,8 @@
         "installFromGH": "Von GitHub installieren",
         "selectToInstall": "Datei zur Installation auswählen",
         "installingAgain": "TizenBrew Installer ist als USB-Demo-Paket installiert und wird jetzt als normales Paket neu installiert.",
-        "alreadyInstalled": "TizenBrew Installer als USB-Demo-Paket ist installiert. Du kannst es jetzt deinstallieren."
+        "alreadyInstalled": "TizenBrew Installer als USB-Demo-Paket ist installiert. Du kannst es jetzt deinstallieren.",
+        "latestUnavailable": "Neueste Version konnte online nicht geprüft werden."
     },
     "installerDesktop": {
         "sdbConnectionRefused": "Verbindung zum SDB-Daemon konnte nicht hergestellt werden. Stelle sicher, dass der Fernseher eingeschaltet ist und die IP-Adresse korrekt ist.",
@@ -90,5 +94,24 @@
         "cancel": "Rest abbrechen",
         "close": "Schließen",
         "needsCertificate": "Samsung-Zertifikat erforderlich, Warteschlange gestoppt"
+    },
+    "githubToken": {
+        "button": "GitHub-Token",
+        "desc": "Erhöht das GitHub-Limit von 60 auf 5000 Anfragen pro Stunde",
+        "saved": "Token gespeichert: {{token}}",
+        "none": "Kein Token gespeichert",
+        "title": "GitHub-Token",
+        "explain": "Ohne Token erlaubt GitHub nur 60 Anfragen pro Stunde pro Netzwerk, die Versionsprüfungen und Installationen schnell aufbrauchen. Ein kostenloser Token erhöht das auf 5000. Er braucht nur Lesezugriff auf öffentliche Repositories und wird nur auf diesem TV gespeichert.",
+        "phoneTitle": "Am einfachsten: mit dem Handy",
+        "phoneHint": "Scanne den Code mit einem Handy im selben Netzwerk. Die Seite dort hilft beim Erstellen des Tokens und schickt ihn an den TV.",
+        "noAddress": "Die Adresse des TV wurde nicht gefunden. Gib den Token stattdessen rechts ein.",
+        "manualTitle": "Oder hier eingeben bzw. einfügen",
+        "manualHint": "Mit OK speichern. Erstellen unter github.com/settings/personal-access-tokens/new (öffentliche Repositories, keine weiteren Rechte).",
+        "save": "Speichern",
+        "remove": "Token entfernen",
+        "invalid": "Das sieht nicht nach einem GitHub-Token aus (er beginnt mit github_pat_ oder ghp_).",
+        "savedMsg": "Token gespeichert.",
+        "removedMsg": "Token entfernt.",
+        "receivedToast": "GitHub-Token vom Handy empfangen und gespeichert."
     }
 }

@@ -1,5 +1,6 @@
 import i18next from 'i18next';
 import { recordInstalledAppId } from '../utils/versionInfo.js';
+import { getGitHubToken, setGitHubToken, formatResetTime } from '../utils/githubToken.js';
 import { onInstallProgress, onInstallResult, onInstallError, onInstallFatal } from '../utils/installQueue.js';
 
 const Events = {
@@ -10,7 +11,20 @@ const Events = {
     DeleteConfiguration:      5,
     ConnectToTV:              6,
     InstallFile:              7,
+    GitHubTokenAddress:       8,
+    GitHubToken:              9,
 };
+
+// The service sends either a plain string (often an i18n key) or
+// { key, args } for errors that need values, e.g. the rate-limit reset time.
+function errorText(payload) {
+    if (payload && typeof payload === 'object' && payload.key) {
+        const args = Object.assign({}, payload.args);
+        if (args.reset !== undefined) args.time = formatResetTime(args.reset) || '?';
+        return i18next.t(payload.key, args);
+    }
+    return i18next.t(payload);
+}
 
 class Client {
     constructor(context) {
@@ -61,11 +75,25 @@ class Client {
                 break;
             }
             case Events.Error: {
-                onInstallError(i18next.t(payload));
+                const message = errorText(payload);
+                onInstallError(message);
                 this.context.dispatch({
                     type: 'SET_ERROR',
-                    payload: { message: i18next.t(payload), disappear: false }
+                    payload: { message, disappear: false }
                 });
+                break;
+            }
+            case Events.GitHubTokenAddress: {
+                this.context.dispatch({ type: 'SET_GITHUB_TOKEN_URLS', payload: payload.urls || [] });
+                break;
+            }
+            case Events.GitHubToken: {
+                if (payload && payload.token) {
+                    setGitHubToken(payload.token);
+                    if (toast) toast.success(i18next.t('githubToken.receivedToast'), 5000);
+                    // Re-check versions now that the limit is higher.
+                    this.context.dispatch({ type: 'REFRESH_VERSIONS' });
+                }
                 break;
             }
             case Events.InstallationStatus: {
@@ -90,7 +118,11 @@ class Client {
     }
 
     send(data) {
-        if (data.type === Events.InstallPackage) this.lastInstallUrl = data.payload?.url;
+        if (data.type === Events.InstallPackage) {
+            this.lastInstallUrl = data.payload?.url;
+            const token = getGitHubToken();
+            if (token && data.payload) data = { ...data, payload: { ...data.payload, githubToken: token } };
+        }
         this.socket.send(JSON.stringify(data));
     }
 }

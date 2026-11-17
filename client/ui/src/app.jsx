@@ -11,6 +11,7 @@ import SavedRepos from './pages/SavedRepos.jsx';
 import AddRepoList from './pages/AddRepoList.jsx';
 import InstallQueueOverlay from './components/InstallQueueOverlay.jsx';
 import About from './pages/About.jsx';
+import GitHubToken from './pages/GitHubToken.jsx';
 import './components/i18n.js';
 import { ExclamationCircleIcon } from '@heroicons/react/16/solid';
 import { useTranslation } from 'react-i18next';
@@ -99,6 +100,7 @@ export default function App() {
             <Route component={SavedRepos}        path="/ui/dist/index.html/saved-repos" />
             <Route component={AddRepoList}       path="/ui/dist/index.html/add-repo-list" />
             <Route component={About}             path="/ui/dist/index.html/about" />
+            <Route component={GitHubToken}       path="/ui/dist/index.html/github-token" />
           </Router>
         </div>
         <InstallQueueOverlay />

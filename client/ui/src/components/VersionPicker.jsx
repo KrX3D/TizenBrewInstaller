@@ -67,7 +67,7 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
         setFocus('version-close');
         fetchReleaseList(repo, 1)
             .then(r => { if (!cancelled) { setReleases(r.items); setHasMore(r.hasMore); } })
-            .catch(() => { if (!cancelled) { setFailed(true); setReleases([]); } });
+            .catch(err => { if (!cancelled) { setFailed(err && err.i18nKey ? err : true); setReleases([]); } });
         return () => { cancelled = true; };
     }, [repo]);
 
@@ -85,7 +85,7 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
                 setLoadingMore(false);
                 setTimeout(() => setFocus(r.items.length ? `version-opt-${prevLen}` : 'version-close'), 0);
             })
-            .catch(() => { setLoadingMore(false); setFailed(true); });
+            .catch(err => { setLoadingMore(false); setFailed(err && err.i18nKey ? err : true); });
     }
 
     // Initial focus only. Without the guard this also ran after "load more"
@@ -109,7 +109,7 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
             setChanges(c => ({ ...c, [tag]: { loading: true } }));
             fetchCommitSummary(repo, olderRelease.sha || olderRelease.tag, focusedRelease.sha || tag)
                 .then(r => setChanges(c => ({ ...c, [tag]: r })))
-                .catch(() => setChanges(c => ({ ...c, [tag]: { error: true } })));
+                .catch(err => setChanges(c => ({ ...c, [tag]: { error: true, i18nKey: err && err.i18nKey, i18nArgs: err && err.i18nArgs } })));
         }, 350);
         return () => clearTimeout(timer);
     }, [focusedIdx, releases]);
@@ -128,7 +128,7 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
 
                     <div className="overflow-y-auto pr-1" style={{ maxHeight: '36vh' }}>
                         {releases === null && <p className="text-slate-400 py-4 text-center">{t('savedRepos.pickerLoading')}</p>}
-                        {failed && <p className="text-amber-400 py-4 text-center">{t('savedRepos.pickerError')}</p>}
+                        {failed && <p className="text-amber-400 py-4 text-center">{failed.i18nKey ? t(failed.i18nKey, failed.i18nArgs) : t('savedRepos.pickerError')}</p>}
                         {releases && !failed && releases.length === 0 && (
                             <p className="text-slate-400 py-4 text-center">{t('savedRepos.pickerEmpty')}</p>
                         )}
@@ -166,7 +166,7 @@ export default function VersionPicker({ repo, installedVersion, onPick, onClose 
                                     )}
                                 </div>
                             ) : changes[focusedRelease.tag] && changes[focusedRelease.tag].error ? (
-                                <span className="text-slate-500">{t('savedRepos.changesError')}</span>
+                                <span className="text-slate-500">{changes[focusedRelease.tag].i18nKey ? t(changes[focusedRelease.tag].i18nKey, changes[focusedRelease.tag].i18nArgs) : t('savedRepos.changesError')}</span>
                             ) : olderRelease ? (
                                 <span className="text-slate-500">{t('savedRepos.changesLoading')}</span>
                             ) : (

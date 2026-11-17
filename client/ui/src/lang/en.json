@@ -4,7 +4,10 @@
         "started": "Service started."
     },
     "errors": {
-        "debuggingNotEnabled": "Error: Could not connect to the SDB Daemon. Are you sure you changed the Host PC IP to 127.0.0.1? If you have, hold the power button till you see the Samsung logo."
+        "debuggingNotEnabled": "Error: Could not connect to the SDB Daemon. Are you sure you changed the Host PC IP to 127.0.0.1? If you have, hold the power button till you see the Samsung logo.",
+        "githubRateLimit": "GitHub limit reached: without a token GitHub allows only 60 requests per hour. Try again after {{time}}, or add a GitHub token on the home screen (GitHub token).",
+        "githubRateLimitWithToken": "GitHub limit reached even with your token. Try again after {{time}}.",
+        "githubBadToken": "GitHub rejected the saved token (expired, revoked or mistyped). Replace or remove it on the home screen (GitHub token)."
     },
     "installStatus": {
         "fetching": "Downloading package...",
@@ -33,7 +36,8 @@
         "installFromGH": "Install from GitHub",
         "selectToInstall": "Select file to install",
         "installingAgain": "TizenBrew Installer is installed as an USB Demo Package. It will now be reinstalled as a normal package.",
-        "alreadyInstalled": "TizenBrew Installer as an USB Demo Package is installed. You can now uninstall it."
+        "alreadyInstalled": "TizenBrew Installer as an USB Demo Package is installed. You can now uninstall it.",
+        "latestUnavailable": "Could not check latest version online."
     },
     "installerDesktop": {
         "sdbConnectionRefused": "Could not connect to the SDB Daemon. Make sure that the TV is on and that the IP is correct.",
@@ -90,5 +94,24 @@
         "cancel": "Cancel remaining",
         "close": "Close",
         "needsCertificate": "Samsung certificate required, queue stopped"
+    },
+    "githubToken": {
+        "button": "GitHub token",
+        "desc": "Raises the GitHub limit from 60 to 5000 requests per hour",
+        "saved": "Token saved: {{token}}",
+        "none": "No token saved",
+        "title": "GitHub token",
+        "explain": "Without a token GitHub allows only 60 requests per hour per network, which version checks and installs use up quickly. A free token raises that to 5000. It only needs read access to public repositories and is stored on this TV only.",
+        "phoneTitle": "Easiest: use your phone",
+        "phoneHint": "Scan the code with a phone on the same network. The page there helps you create the token and sends it to the TV.",
+        "noAddress": "The TV address could not be found. Enter the token on the right instead.",
+        "manualTitle": "Or type or paste it here",
+        "manualHint": "Press OK to save. Create one at github.com/settings/personal-access-tokens/new (public repositories, no extra permissions).",
+        "save": "Save",
+        "remove": "Remove token",
+        "invalid": "That does not look like a GitHub token (it starts with github_pat_ or ghp_).",
+        "savedMsg": "Token saved.",
+        "removedMsg": "Token removed.",
+        "receivedToast": "GitHub token received from your phone and saved."
     }
 }

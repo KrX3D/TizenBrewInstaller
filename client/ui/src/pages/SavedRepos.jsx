@@ -327,6 +327,12 @@ export default function SavedRepos() {
         });
     }, [repoList.join(','), versionRefreshTick]);
 
+    // One banner for the whole page: a rate limit hits every repo at once.
+    const versionError = repoList
+        .map(r => versionMap[r])
+        .map(v => v && v.error)
+        .find(Boolean);
+
     const updatable = repoList
         .map(r => versionMap[r])
         .filter(v => v && isUpdateAvailable(v.installedVersion, v.latestVersion));
@@ -381,6 +387,9 @@ export default function SavedRepos() {
             </p>
 
             <div className="w-full max-w-2xl flex flex-col">
+                {versionError && (
+                    <p className="text-amber-400 text-sm mb-3 text-center">{t(versionError.key, versionError.args)}</p>
+                )}
                 {updatable.length > 0 && clientReady && (
                     <UpdateAllRow count={updatable.length} onRun={runUpdateAll} />
                 )}

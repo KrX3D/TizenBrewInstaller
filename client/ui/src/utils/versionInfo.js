@@ -1,3 +1,5 @@
+import { githubFetch, describeGitHubFailure, gitHubError } from './githubToken.js';
+
 export function normalizeRepo(repo) {
     if (!repo) return '';
     return repo.trim()
@@ -81,6 +83,7 @@ export function fetchAllVersionInfo(repoList, force) {
                 appId: info.appId,
                 appName: info.appName,
                 latestSource: info.latestSource,
+                error: info.error || null,
                 installedVersion: installedVersion,
                 updateAvailable: isUpdateAvailable(installedVersion, info.latestVersion)
             };
@@ -156,14 +159,21 @@ export function fetchLatestReleaseInfo(repo, force) {
         if (controller) controller.abort();
     }, 7000);
 
-    return fetch('https://api.github.com/repos/' + normalized + '/releases/latest', controller ? { signal: controller.signal } : undefined)
+    var failure = null;
+    return githubFetch('https://api.github.com/repos/' + normalized + '/releases/latest', controller ? { signal: controller.signal } : undefined)
         .then(function(res) {
-            if (!res.ok) return null;
+            if (!res.ok) {
+                failure = describeGitHubFailure(res);
+                return null;
+            }
             return res.json();
         })
         .then(function(data) {
             clearTimeout(timeoutId);
-            if (!data) return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable' };
+            if (!data) {
+                if (cached && cached.latestVersion) return Object.assign({}, cached, { latestSource: 'cache_stale', error: failure });
+                return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable', error: failure };
+            }
             var metadata = parseMetadataFromReleaseBody(data.body || '');
             var out = {
                 latestVersion: data.tag_name ? data.tag_name.replace(/^v/, '') : null,
@@ -180,8 +190,8 @@ export function fetchLatestReleaseInfo(repo, force) {
         .catch(function() {
             clearTimeout(timeoutId);
             // Fall back to stale cache rather than showing nothing.
-            if (cached && cached.latestVersion) return Object.assign({}, cached, { latestSource: 'cache_stale' });
-            return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable' };
+            if (cached && cached.latestVersion) return Object.assign({}, cached, { latestSource: 'cache_stale', error: failure });
+            return { latestVersion: null, appId: null, appName: null, latestSource: 'unavailable', error: failure };
         });
 }
 
@@ -236,10 +246,10 @@ export function fetchCommitSummary(repo, base, head) {
         if (controller) controller.abort();
     }, 10000);
 
-    return fetch('https://api.github.com/repos/' + normalized + '/compare/' + encodeURIComponent(base) + '...' + encodeURIComponent(head), controller ? { signal: controller.signal } : undefined)
+    return githubFetch('https://api.github.com/repos/' + normalized + '/compare/' + encodeURIComponent(base) + '...' + encodeURIComponent(head), controller ? { signal: controller.signal } : undefined)
         .then(function(res) {
             clearTimeout(timeoutId);
-            if (!res.ok) throw new Error('HTTP ' + res.status);
+            if (!res.ok) throw gitHubError(res);
             return res.json();
         })
         .then(function(data) {
@@ -271,10 +281,10 @@ export function fetchReleaseList(repo, page) {
         if (controller) controller.abort();
     }, 10000);
 
-    return fetch('https://api.github.com/repos/' + normalized + '/releases?per_page=' + RELEASES_PER_PAGE + '&page=' + (page || 1), controller ? { signal: controller.signal } : undefined)
+    return githubFetch('https://api.github.com/repos/' + normalized + '/releases?per_page=' + RELEASES_PER_PAGE + '&page=' + (page || 1), controller ? { signal: controller.signal } : undefined)
         .then(function(res) {
             clearTimeout(timeoutId);
-            if (!res.ok) throw new Error('HTTP ' + res.status);
+            if (!res.ok) throw gitHubError(res);
             return res.json();
         })
         .then(function(list) {
