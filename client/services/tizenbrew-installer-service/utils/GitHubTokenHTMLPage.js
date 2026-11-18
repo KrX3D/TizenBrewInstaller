@@ -30,6 +30,7 @@ const gitHubTokenHtmlPage = `<!DOCTYPE html>
     </ol>
     <a class="button" target="_blank" rel="noopener" href="https://github.com/settings/personal-access-tokens/new?name=TizenBrew%20Installer&description=Raises%20the%20GitHub%20API%20limit%20for%20the%20TizenBrew%20Installer" data-t="create"></a>
     <input id="token" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="github_pat_... / ghp_...">
+    <input id="pin" type="text" inputmode="numeric" maxlength="4" autocomplete="off" style="display:none;margin-top:12px">
     <button id="save" data-t="save"></button>
     <p id="status"></p>
 </div>
@@ -46,7 +47,8 @@ const gitHubTokenHtmlPage = `<!DOCTYPE html>
         empty: 'Bitte zuerst einen Token einfügen.',
         sending: 'Wird gesendet...',
         done: 'Gespeichert. Der Token ist jetzt auf dem TV, diese Seite kann geschlossen werden.',
-        failed: 'Fehler: '
+        failed: 'Fehler: ',
+        pinHint: 'PIN vom TV (4 Ziffern)'
     } : {
         title: 'GitHub token for TizenBrew Installer',
         intro: 'Without a token GitHub allows only 60 requests per hour. With one it allows 5000.',
@@ -58,10 +60,15 @@ const gitHubTokenHtmlPage = `<!DOCTYPE html>
         empty: 'Paste a token first.',
         sending: 'Sending...',
         done: 'Saved. The token is on the TV now, you can close this page.',
-        failed: 'Error: '
+        failed: 'Error: ',
+        pinHint: 'PIN shown on the TV (4 digits)'
     };
     var nodes = document.querySelectorAll('[data-t]');
     for (var i = 0; i < nodes.length; i++) nodes[i].textContent = T[nodes[i].getAttribute('data-t')];
+    var pinMatch = /[?&]pin=(\\d+)/.exec(location.search);
+    var pinInput = document.getElementById('pin');
+    pinInput.placeholder = T.pinHint;
+    if (pinMatch) pinInput.value = pinMatch[1]; else pinInput.style.display = 'block';
     var status = document.getElementById('status');
     document.getElementById('save').addEventListener('click', function () {
         var token = document.getElementById('token').value.trim();
@@ -84,7 +91,7 @@ const gitHubTokenHtmlPage = `<!DOCTYPE html>
             }
         };
         xhr.onerror = function () { status.className = 'err'; status.textContent = T.failed + 'network'; };
-        xhr.send('token=' + encodeURIComponent(token));
+        xhr.send('token=' + encodeURIComponent(token) + '&pin=' + encodeURIComponent(pinInput.value.trim()));
     });
 </script>
 </body>
