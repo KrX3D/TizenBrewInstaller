@@ -44,6 +44,21 @@ module.exports.onStart = function () {
     }
 
     const app = express();
+
+    // 8091 listens on every interface so a phone can reach the token page,
+    // but the WebSocket API behind it can install packages. Only the TV
+    // itself (or the PC running the desktop build) gets anything except the
+    // token page; the token page needs the PIN that is in the QR code.
+    function isLoopback(addr) {
+        return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+    }
+    const REMOTE_PIN = String(Math.floor(1000 + Math.random() * 9000));
+    const GITHUB_TOKEN_PATH = '/github-token';
+    app.use((req, res, next) => {
+        if (isLoopback(req.socket.remoteAddress) || req.path === GITHUB_TOKEN_PATH) return next();
+        res.status(403).send('Only the GitHub token page is reachable from the network.');
+    });
+
     if (!isTV) {
         console.log('Open up http://localhost:8091/ui/dist/index.html to access the TizenBrew Installer.');
         if (existsSync(`${process.platform === 'win32' ? 'C:\\' : '/'}snapshot/client`)) {
@@ -60,11 +75,13 @@ module.exports.onStart = function () {
     // Lets a phone or PC on the same network hand over a GitHub token, so
     // nobody has to type 40+ characters with the TV remote. The token goes
     // straight to the UI (which keeps it); it is never sent back out here.
-    const GITHUB_TOKEN_PATH = '/github-token';
     app.get(GITHUB_TOKEN_PATH, (_, res) => {
         res.send(GitHubTokenHTMLPage);
     });
     app.post(GITHUB_TOKEN_PATH, express.urlencoded({ extended: false }), (req, res) => {
+        if (!isLoopback(req.socket.remoteAddress) && String((req.body && req.body.pin) || '').trim() !== REMOTE_PIN) {
+            return res.status(403).json({ error: 'Wrong PIN. Scan the QR code on the TV again.' });
+        }
         const token = String((req.body && req.body.token) || '').trim();
         if (!/^[A-Za-z0-9_]{20,255}$/.test(token)) {
             return res.status(400).json({ error: 'That does not look like a GitHub token.' });
@@ -91,7 +108,10 @@ module.exports.onStart = function () {
 
     let isTizen7OrHigher = isTV && Number(tizen.systeminfo.getCapability('http://tizen.org/feature/platform.version').split('.')[0]) >= 7;
     const isTizen3 = isTV && tizen.systeminfo.getCapability('http://tizen.org/feature/platform.version').startsWith('3.0');
-    const wsServer = new WebSocket.Server({ server: app.listen(8091) });
+    const wsServer = new WebSocket.Server({
+        server: app.listen(8091),
+        verifyClient: (info) => isLoopback(info.req.socket.remoteAddress)
+    });
 
     function checkCanConnectToDevice() {
         fetch('http://127.0.0.1:8001/api/v2/').then(res => res.json())
@@ -329,7 +349,7 @@ module.exports.onStart = function () {
                 }
 
                 case Events.GitHubTokenAddress: {
-                    const urls = lanAddresses().map(ip => `http://${ip}:8091${GITHUB_TOKEN_PATH}`);
+                    const urls = lanAddresses().map(ip => `http://${ip}:8091${GITHUB_TOKEN_PATH}?pin=${REMOTE_PIN}`);
                     wsConn.send(wsConn.Event(Events.GitHubTokenAddress, { urls }));
                     break;
                 }

@@ -43,6 +43,15 @@ someone/else/more-repos.md   # another list: shown nested, removed again if this
 - Repos added by hand, and repos you lock (padlock button), are never removed by a sync. A list that can't be loaded is left untouched.
 - Removing a list removes its unlocked repos and any nested lists with them. The eye button disables syncing for a list without removing anything.
 
+## Network ports
+
+| Port | Direction | What | Reachable from the network |
+|---|---|---|---|
+| TCP 8091 | phone/PC → TV | Installer service. From the network only the GitHub token page (`/github-token`) answers, and saving a token needs the 4-digit PIN that is in the QR code (new on every service start). Everything else, including the WebSocket API that installs packages, only answers the TV itself. | Only `/github-token` |
+| TCP 4794 | phone/PC → TV | Page for pasting the Samsung certificate JSON while resigning (Tizen 7+). | Yes, while resigning |
+
+Firewall/VLAN rule (e.g. UniFi): allow the phone or PC to reach the TV on TCP 8091 to hand over a token, and on 4794 to resign. Nothing else is needed.
+
 ## CI secrets
 
 The release workflow (`.github/workflows/build-release.yaml`) uses these repository secrets (Settings > Secrets and variables > Actions):
